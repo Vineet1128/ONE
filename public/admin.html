@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin — SIP Mentorship</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    /* === Match Acadcom Control dark theme === */
+    body.app-dark { background:#0f172a; color:#f8fafc; font-family:'Inter',sans-serif; }
+    .wrap{max-width:1080px;margin:16px auto;padding:0 16px}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:16px; padding:16px;
+      box-shadow:0 10px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .card h2{margin:0 0 12px 0}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(148,163,184,.18);padding:8px;text-align:left;font-size:14px}
+    th{color:#cbd5e1}
+    .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+    .msg{font-size:12px;margin-top:6px}
+    .ok{color:#22c55e}
+    .err{color:#f87171}
+    .small{font-size:12px;color:#94a3b8}
+    input[type="text"], input[type="url"], input[type="email"], textarea, select {
+      width:100%;padding:10px 12px;border-radius:10px;
+      background:#0b1223;color:#e5e7eb;border:1px solid rgba(148,163,184,.18);outline:none;
+    }
+    .btn{background:#111827;color:#fff;border:1px solid rgba(255,255,255,.06);box-shadow:0 10px 26px rgba(2,132,199,.12)}
+    .btn.light{background:rgba(255,255,255,.06);color:#e5e7eb;border:1px solid rgba(148,163,184,.18)}
+    .vpad{margin-top:10px}
+
+    /* Compact header polish to match Acadcom */
+    .hdr-actions { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; white-space:nowrap; }
+    .btn.icon-only { width:32px; height:32px; padding:0; display:grid; place-items:center; }
+    .btn.icon-only svg { width:15px; height:15px; }
+    #btnSignOut.compact { padding:6px 10px; height:32px; font-size:13px; line-height:1; }
+
+    @media (max-width:520px){
+      #header > * { padding-top:6px !important; padding-bottom:6px !important; }
+      #header .tagline, #header .subtitle, #header .brand-sub { display:none !important; }
+      #header h1, #header .title, #header .brand-title { font-size:18px !important; line-height:1.2 !important; }
+    }
+  </style>
+</head>
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- Season -->
+      <div class="card">
+        <h2>Season & Roles</h2>
+        <label class="row">
+          <input id="chkReverseRoles" type="checkbox"/>
+          <span>Reverse roles (Winter/December mode)</span>
+        </label>
+        <div class="vpad">
+          <input id="seasonName" type="text" placeholder="Season name e.g. Winter 2025"/>
+        </div>
+        <div class="row vpad">
+          <button id="btnSaveSeason" class="btn">Save</button>
+          <span id="seasonMsg" class="msg"></span>
+        </div>
+        <div id="seasonMeta" class="small vpad"></div>
+      </div>
+
+      <!-- Acadcom -->
+      <div class="card">
+        <h2>Acadcom</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Updated</th></tr></thead>
+          <tbody id="acadTBody"><tr><td class="small" colspan="2">Loading…</td></tr></tbody>
+        </table>
+        <div class="vpad">
+          <input id="acadEmail" type="text" placeholder="user@astra.xlri.ac.in"/>
+        </div>
+        <div class="row vpad">
+          <button id="btnAddAcad" class="btn">Add</button>
+          <button id="btnRemoveAcad" class="btn light">Remove</button>
+          <span id="acadMsg" class="msg"></span>
+        </div>
+      </div>
+
+      <!-- Admins -->
+      <div class="card">
+        <h2>Admins</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Since</th></tr></thead>
+          <tbody id="adminTBody"><tr><td class="small" colspan="2">Loading…</td></tr></tbody>
+        </table>
+        <div class="vpad">
+          <input id="adminEmail" type="text" placeholder="student@astra.xlri.ac.in"/>
+        </div>
+        <div class="row vpad">
+          <button id="btnAddAdmin" class="btn">Add Admin</button>
+          <button id="btnRemoveAdmin" class="btn light">Remove Admin</button>
+          <span id="adminMsg" class="msg"></span>
+        </div>
+      </div>
+
+      <!-- CRISP -->
+      <div class="card">
+        <h2>CRISP</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Since</th></tr></thead>
+          <tbody id="crispTBody"><tr><td class="small" colspan="2">Loading…</td></tr></tbody>
+        </table>
+        <div class="vpad">
+          <input id="crispEmail" type="text" placeholder="student@astra.xlri.ac.in"/>
+        </div>
+        <div class="row vpad">
+          <button id="btnAddCrisp" class="btn">Add CRISP</button>
+          <button id="btnRemoveCrisp" class="btn light">Remove CRISP</button>
+          <span id="crispMsg" class="msg"></span>
+        </div>
+      </div>
+
+      <!-- NEW: Alcom (added without changing existing cards) -->
+      <div class="card">
+        <h2>Alcom</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Since</th></tr></thead>
+          <tbody id="alcomTBody"><tr><td class="small" colspan="2">Loading…</td></tr></tbody>
+        </table>
+        <div class="vpad">
+          <input id="alcomEmail" type="text" placeholder="student@astra.xlri.ac.in"/>
+        </div>
+        <div class="row vpad">
+          <button id="btnAddAlcom" class="btn">Add Alcom</button>
+          <button id="btnRemoveAlcom" class="btn light">Remove Alcom</button>
+          <span id="alcomMsg" class="msg"></span>
+        </div>
+      </div>
+
+      <!-- NEW: Home buttons -->
+      <div class="card">
+        <h2>Home buttons</h2>
+        <label class="row">
+          <input id="chkShowAcademics" type="checkbox" checked>
+          <span>Show <b>Academics</b> on Home</span>
+        </label>
+        <label class="row">
+          <input id="chkShowPreparation" type="checkbox" checked>
+          <span>Show <b>Preparation</b> on Home</span>
+        </label>
+        <div class="row vpad">
+          <button id="btnSaveHomeButtons" class="btn">Save</button>
+          <span id="homeBtnMsg" class="msg"></span>
+        </div>
+        <div id="homeBtnMeta" class="small vpad"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const $ = (id)=> document.getElementById(id);
+
+    onAuthStateChanged(auth, (u)=>{
+      const email = u?.email || "";
+
+      // SAME header as Acadcom (compact + right actions)
+      document.getElementById("header").innerHTML = renderHeader({
+        title: "SIP Mentorship — Admin",
+        email,
+        showAdmin: true,
+        showCrisp: true
+      });
+      // Compact header actions (Home icon + smaller sign out), reused from Acadcom.html
+      const btnSignOut = document.getElementById("btnSignOut");
+      if (btnSignOut && !document.getElementById("btnGoHome")) {
+        btnSignOut.classList.add('compact');
+        const home = document.createElement("a");
+        home.id = "btnGoHome"; home.href = "/home.html";
+        home.className = "btn light icon-only"; home.title = "Home";
+        home.setAttribute("aria-label","Home");
+        home.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"></path><path d="M9 22V12h6v10"></path></svg>`;
+        const rightCluster = btnSignOut.parentElement;
+        rightCluster.classList.add('hdr-actions');
+        rightCluster.style.display='flex'; rightCluster.style.alignItems='center';
+        rightCluster.style.gap='6px'; rightCluster.style.flexWrap='nowrap'; rightCluster.style.whiteSpace='nowrap';
+        rightCluster.insertBefore(home, btnSignOut);
+        const headerRoot = document.getElementById("header").firstElementChild;
+        if (headerRoot) headerRoot.style.padding = "6px 10px";
+      }
+
+      attachAuthHandlers();
+      // existing /js/admin.js still runs below
+    });
+  </script>
+
+  <!-- Existing admin logic stays intact -->
+  <script type="module" src="/js/admin.js"></script>
+
+  <!-- NEW tiny module: load/save Home-button flags (isolated, safe) -->
+  <script type="module">
+    import { db, doc, getDoc, setDoc, serverTimestamp } from "/shared/firebase.js";
+
+    const $ = (id)=> document.getElementById(id);
+    const ref = doc(db, "settings", "app");
+
+    async function initHomeToggles(){
+      try{
+        const snap = await getDoc(ref);
+        const d = snap.exists() ? (snap.data() || {}) : {};
+        $("chkShowAcademics").checked   = d.homeShowAcademics   !== false; // default true
+        $("chkShowPreparation").checked = d.homeShowPreparation !== false; // default true
+        $("homeBtnMeta").textContent = "Values are saved in settings/app.";
+      } catch(e){
+        $("homeBtnMeta").textContent = "Could not load settings.";
+      }
+    }
+
+    async function saveHomeToggles(){
+      $("homeBtnMsg").textContent = "Saving…";
+      try{
+        const payload = {
+          homeShowAcademics:   $("chkShowAcademics").checked,
+          homeShowPreparation: $("chkShowPreparation").checked,
+          updatedAt: serverTimestamp?.() || new Date()
+        };
+        await setDoc(ref, payload, { merge:true });
+        $("homeBtnMsg").textContent = "Saved.";
+        $("homeBtnMsg").className = "msg ok";
+      } catch(e){
+        $("homeBtnMsg").textContent = "Save failed.";
+        $("homeBtnMsg").className = "msg err";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      initHomeToggles();
+      $("btnSaveHomeButtons")?.addEventListener("click", saveHomeToggles);
+    });
+  </script>
+</body>
+</html>

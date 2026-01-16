@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Senior — SIP Mentorship</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css?v=2025-09-16c">
+
+</head>
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="card sticky" id="approveNudge" style="display:none"></div>
+
+    <div class="card" id="provideCard">
+      <h2>Provide slot</h2>
+      <form id="slotForm" autocomplete="off">
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <label>Domain</label>
+            <select id="slotDomain" required>
+              <option value="">Select</option>
+              <option>Consulting</option><option>Product Management</option>
+              <option>Finance</option><option>Marketing</option><option>Operations</option>
+            </select>
+          </div>
+          <div style="flex:2;min-width:280px">
+            <label>Topic</label>
+            <input id="slotTopic" placeholder="Case basics / Guesstimates / Finance Q&A"/>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <label>Date</label>
+            <input id="slotDate" type="date" required/>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1;min-width:160px">
+            <label>Start</label>
+            <input id="slotStart" type="time" required/>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label>End</label>
+            <input id="slotEnd" type="time" required/>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label>Capacity</label>
+            <input id="slotCap" type="number" value="1" readonly/>
+          </div>
+        </div>
+        <label>Notes (optional)</label>
+        <textarea id="slotNotes" placeholder="Anything juniors should know"></textarea>
+        <div class="row" style="margin-top:12px;align-items:center">
+          <button class="btn green" type="submit">Create slot</button>
+          <span class="msg" id="slotMsg"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>My slots</h2>
+      <div class="row">
+        <span class="badge">Total: <span id="mySlotsTotal">0</span></span>
+        <span class="badge">Upcoming: <span id="mySlotsUpcoming">0</span></span>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Domain</th><th>Topic</th><th>Booked/Cap</th><th>Status (names)</th><th>Actions</th></tr></thead>
+          <tbody id="mySlotsTBody"><tr><td colspan="7" class="small">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Demand for slot</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label style="margin:0">Filter by domain</label>
+        <select id="demFilter" class="light" style="min-width:200px">
+          <option value="All">All</option>
+          <option>Consulting</option><option>Product Management</option>
+          <option>Finance</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <button class="btn light" id="btnDemRefresh">Refresh</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Junior</th><th>Email</th><th>Domain</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
+          <tbody id="demandsTBody"><tr><td colspan="6" class="small">No active requests.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth, db, doc, getDoc, onSnapshot } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // Live season/app header like Home/Academics
+    onAuthStateChanged(auth, async (u)=>{
+      const email = u?.email || "";
+
+      // Initial header (no season text yet)
+      const base = {
+        title: "OPAXI",
+        email,
+        showAdmin: true,
+        showCrisp: true,
+        showAcadcom: true,
+        showHomeInSeason: true,
+        seasonText: "" // will be filled after fetch
+      };
+      document.getElementById("header").innerHTML = renderHeader(base);
+      attachAuthHandlers();
+
+      // Read season/app settings once, then live-update
+      try {
+        const ref = doc(db, "settings", "app");
+        const snap = await getDoc(ref);
+        const d = snap.exists() ? (snap.data()||{}) : {};
+        const seasonName = d.seasonName || "";
+        const reverse = !!d.reverseRoles;
+        const seasonText = seasonName ? `Season: ${seasonName}${reverse ? " — Roles reversed" : ""}` : (reverse ? "Roles reversed" : "");
+        document.getElementById("header").innerHTML = renderHeader({ ...base, seasonText });
+        attachAuthHandlers();
+
+        onSnapshot(ref, (s)=>{
+          const dd = s.exists() ? (s.data()||{}) : {};
+          const sn = dd.seasonName || "";
+          const rv = !!dd.reverseRoles;
+          const st = sn ? `Season: ${sn}${rv ? " — Roles reversed" : ""}` : (rv ? "Roles reversed" : "");
+          document.getElementById("header").innerHTML = renderHeader({ ...base, seasonText: st });
+          attachAuthHandlers();
+        });
+      } catch (e) {
+        // If settings/app unreadable, keep header without season bar
+        console.warn("Season/app read failed:", e);
+      }
+    });
+  </script>
+  <script type="module" src="/js/senior.js"></script>
+</body>
+</html>

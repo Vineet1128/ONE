@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Junior — SIP Mentorship</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css?v=2025-09-16c">
+
+</head>
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="card sticky" id="jrNotice" style="display:none"></div>
+
+    <div class="card">
+      <h2>Browse available slots</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label style="margin:0">Filter by domain</label>
+        <select id="slotFilter" class="light" style="min-width:200px">
+          <option value="All">All</option>
+          <option>Consulting</option><option>Product Management</option>
+          <option>Finance</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <button class="btn light" id="btnSlotsRefresh">Refresh</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Domain</th><th>Topic</th><th>Senior</th><th>Seats</th><th>Action</th></tr></thead>
+          <tbody id="openSlotsTBody"><tr><td colspan="7" class="small">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>My bookings</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label style="margin:0">Filter</label>
+        <select id="bkDomain" class="light" style="min-width:160px">
+          <option value="All">All domains</option>
+          <option>Consulting</option><option>Product Management</option>
+          <option>Finance</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <select id="bkStatus" class="light" style="min-width:140px">
+          <option value="All">Any status</option>
+          <option value="booked">Booked</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button class="btn light" id="btnBkRefresh">Apply</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Domain</th><th>Topic</th><th>Senior</th><th>Status</th></tr></thead>
+          <tbody id="myBookingsTBody"><tr><td colspan="6" class="small">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Raise a demand</h2>
+      <form id="demandForm">
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <label>Domain</label>
+            <select id="demDomain" required>
+              <option value="">Select</option>
+              <option>Consulting</option><option>Product Management</option>
+              <option>Finance</option><option>Marketing</option><option>Operations</option>
+            </select>
+          </div>
+          <div style="flex:2;min-width:280px">
+            <label>Topic (optional)</label>
+            <input id="demTopic" placeholder="e.g., Guesstimates / Finance Q&A">
+          </div>
+        </div>
+        <label>Notes (optional)</label>
+        <textarea id="demNotes" placeholder="Anything seniors should know"></textarea>
+        <div class="row" style="margin-top:12px;align-items:center">
+          <button class="btn green" type="submit">Submit demand</button>
+          <span class="msg" id="demMsg"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>My demands</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label style="margin:0">Filter</label>
+        <select id="dmDomain" class="light" style="min-width:160px">
+          <option value="All">All domains</option>
+          <option>Consulting</option><option>Product Management</option>
+          <option>Finance</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <select id="dmStatus" class="light" style="min-width:160px">
+          <option value="All">Any status</option>
+          <option value="active">Active</option>
+          <option value="approved">Approved</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="closed">Closed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button class="btn light" id="btnDmRefresh">Apply</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Topic</th>
+              <th>Status</th>
+              <th>Senior</th>
+              <th>Slot</th>
+            </tr>
+          </thead>
+          <tbody id="myDemandsTBody"><tr><td colspan="5" class="small">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth, db, doc, getDoc, onSnapshot } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // Live season/app header like Home/Academics
+    onAuthStateChanged(auth, async (u)=>{
+      const email = u?.email || "";
+
+      // Initial header (no season text yet)
+      const base = {
+        title: "OPAXI",
+        email,
+        showAdmin: true,
+        showCrisp: true,
+        showAcadcom: true,
+        showHomeInSeason: true,
+        seasonText: "" // will be filled after fetch
+      };
+      document.getElementById("header").innerHTML = renderHeader(base);
+      attachAuthHandlers();
+
+      // Read season/app settings once, then live-update
+      try {
+        const ref = doc(db, "settings", "app");
+        const snap = await getDoc(ref);
+        const d = snap.exists() ? (snap.data()||{}) : {};
+        const seasonName = d.seasonName || "";
+        const reverse = !!d.reverseRoles;
+        const seasonText = seasonName ? `Season: ${seasonName}${reverse ? " — Roles reversed" : ""}` : (reverse ? "Roles reversed" : "");
+        document.getElementById("header").innerHTML = renderHeader({ ...base, seasonText });
+        attachAuthHandlers();
+
+        onSnapshot(ref, (s)=>{
+          const dd = s.exists() ? (s.data()||{}) : {};
+          const sn = dd.seasonName || "";
+          const rv = !!dd.reverseRoles;
+          const st = sn ? `Season: ${sn}${rv ? " — Roles reversed" : ""}` : (rv ? "Roles reversed" : "");
+          document.getElementById("header").innerHTML = renderHeader({ ...base, seasonText: st });
+          attachAuthHandlers();
+        });
+      } catch (e) {
+        // If settings/app unreadable, keep header without season bar
+        console.warn("Season/app read failed:", e);
+      }
+    });
+  </script>
+  <script type="module" src="/js/junior.js"></script>
+</body>
+</html>

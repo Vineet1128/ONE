@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- helpers ---------- */
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+    function isCollege() {
+      return isSignedIn() && request.auth.token.email.matches('.*@astra\\.xlri\\.ac\\.in$');
+    }
+
+    // roles/{email}
+    function adminRecord() {
+      return get(/databases/$(database)/documents/roles/$(request.auth.token.email));
+    }
+    function isAdmin() {
+      return (
+        adminRecord().exists() &&
+        (adminRecord().data.admin == true || adminRecord().data.isAdmin == true)
+      ) || (request.auth.token.email == 'b24408@astra.xlri.ac.in');
+    }
+    function isAcadcom() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/roles/$(request.auth.token.email)).data.acadcom == true;
+    }
+
+    // cohort email helpers (kept for back-compat)
+    function isSeniorEmail() {
+      return request.auth.token.email.matches('^b24.*@astra\\.xlri\\.ac\\.in$');
+    }
+    function isJuniorEmail() {
+      return request.auth.token.email.matches('^b25.*@astra\\.xlri\\.ac\\.in$');
+    }
+    function isSenior() { return isCollege() && (isSeniorEmail() || isAdmin()); }
+    function isJunior() { return isCollege() && isJuniorEmail(); }
+
+    // -------------- NEW: season config helpers --------------
+    function appConfig() {
+      return get(/databases/$(database)/documents/settings/app);
+    }
+    function isReverse() {
+      // If settings/app is missing or unreadable, default to normal season.
+      return appConfig().exists() && appConfig().data.reverseRoles == true;
+    }
+
+    // In NORMAL season: seniors mentor (create slots); juniors seek (book, raise demand)
+    // In REVERSE season: juniors mentor; seniors seek
+    function canCreateSlot() {
+      return ( !isReverse() && isSenior() ) || ( isReverse() && isJunior() );
+    }
+    function canBookSlot() {
+      return ( !isReverse() && isJunior() ) || ( isReverse() && isSenior() );
+    }
+    function canRaiseDemand() {
+      return ( !isReverse() && isJunior() ) || ( isReverse() && isSenior() );
+    }
+    function canResolveDemand() {
+      // mentor side can update demand status (approved/scheduled/closed/cancelled/completed)
+      return ( !isReverse() && isSenior() ) || ( isReverse() && isJunior() ) || isAdmin();
+    }
+
+    /* -------------------- slots -------------------- */
+    match /slots/{slotId} {
+      allow read: if isCollege();
+
+      // Create by mentor side (season-aware)
+      allow create: if canCreateSlot()
+        && request.resource.data.ownerUid   == request.auth.uid
+        && request.resource.data.ownerEmail == request.auth.token.email
+        && request.resource.data.status     == 'open'
+        && request.resource.data.bookedCount == 0
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 1;
+
+      // Owner (mentor) can update own slot
+      allow update: if (
+          // owner can change/cancel/complete/etc.
+          ((isSenior() || isJunior()) && resource.data.ownerUid == request.auth.uid)
+        );
+        // NOTE: junior booking path below remains explicit.
+
+      // Booking by seeker side (+1 invariants) — season-aware
+      allow update: if canBookSlot()
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'open'
+        && request.resource.data.capacity == resource.data.capacity
+        && request.resource.data.ownerUid   == resource.data.ownerUid
+        && request.resource.data.ownerEmail == resource.data.ownerEmail
+        && request.resource.data.domain     == resource.data.domain
+        && request.resource.data.topic      == resource.data.topic
+        && request.resource.data.date       == resource.data.date
+        && request.resource.data.start      == resource.data.start
+        && request.resource.data.end        == resource.data.end
+        && request.resource.data.bookedCount == resource.data.bookedCount + 1
+        && request.resource.data.bookedCount <= resource.data.capacity
+        && request.resource.data.attendees.size() == resource.data.attendees.size() + 1
+        && request.resource.data.attendees[resource.data.attendees.size()].uid == request.auth.uid
+        && request.resource.data.attendees[resource.data.attendees.size()].email == request.auth.token.email;
+
+      allow delete: if false;
+    }
+
+    /* ------------------- demands ------------------- */
+    match /demands/{demandId} {
+      allow read: if isCollege();
+
+      // Create by seeker side — season-aware
+      allow create: if canRaiseDemand()
+        && request.resource.data.juniorUid   == request.auth.uid
+        && request.resource.data.juniorEmail == request.auth.token.email
+        && request.resource.data.status == 'active';
+
+      // Mentor/admin may update status — season-aware
+      allow update: if canResolveDemand()
+        && (
+          request.resource.data.status == 'approved'  ||
+          request.resource.data.status == 'closed'    ||
+          request.resource.data.status == 'scheduled' ||
+          request.resource.data.status == 'cancelled' ||
+          request.resource.data.status == 'completed'
+        );
+
+      allow delete: if false;
+    }
+
+    /* ------------------- bookings ------------------ */
+    match /bookings/{bookingId} {
+      allow read: if isAdmin() ||
+        (isCollege() && (request.auth.uid == resource.data.juniorUid || request.auth.uid == resource.data.ownerUid));
+
+      // Either participant can create (unchanged)
+      allow create: if isCollege() &&
+        (request.resource.data.juniorUid == request.auth.uid || request.resource.data.ownerUid == request.auth.uid);
+
+      allow update: if isAdmin() ||
+        (isCollege() && (request.auth.uid == resource.data.juniorUid || request.auth.uid == resource.data.ownerUid));
+
+      allow delete: if false;
+    }
+
+    /* --------------- notifications ---------------- */
+    match /notifications/{noteId} {
+      allow create: if isCollege();
+      allow read, update: if isCollege() && resource.data.email == request.auth.token.email;
+      allow delete: if false;
+    }
+
+    /* --------------------- roles ------------------- */
+    match /roles/{email} {
+      allow read: if isCollege();
+
+      // Only admins can write roles; super-admin row only by super-admin.
+      allow create, update: if isAdmin()
+        && (email != 'b24408@astra.xlri.ac.in' || request.auth.token.email == 'b24408@astra.xlri.ac.in');
+
+      allow delete: if false;
+    }
+
+    /* --------------------- resets ------------------ */
+    match /resets/{resetId} {
+      allow read: if isCollege();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    /* --------------------- settings ---------------- */
+    // Season/app-wide config (reverseRoles, seasonName, etc.)
+    match /settings/app {
+      allow read: if isCollege();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Acadcom routine (links, reminder time, terms, catalogs)
+    match /settings/routine {
+      allow read: if isCollege();
+      allow create, update: if isAdmin() || isAcadcom();
+      allow delete: if false;
+    }
+
+    /* =======================================================
+       ================  APPENDED RULES (NEW) ================
+       ======================================================= */
+
+    /* --- Academics settings (if you use a separate doc) --- */
+    match /settings/academics {
+      allow read: if isCollege();
+      allow create, update: if isAdmin() || isAcadcom();
+      allow delete: if false;
+    }
+
+    /* --- OPTIONAL: legacy profiles by UID (kept for compat) --- */
+    match /userProfiles/{uid} {
+      allow read: if isCollege() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isCollege() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    /* --- NEW: profiles keyed by email (used by ProfileService) --- */
+    match /profiles/{email} {
+      // Only the owner (by email) or an admin can read
+      allow read: if isCollege() && (request.auth.token.email == email || isAdmin());
+      // Only the owner can create/update their profile
+      allow create, update: if isCollege() && request.auth.token.email == email;
+      allow delete: if false;
+    }
+
+    /* --- OPTIONAL: attendance daily records --- */
+    match /attendance/{uid}/days/{dateId} {
+      allow read: if isCollege() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isCollege() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    /* --------------- default deny ------------------ */
+    match /{document=**} { allow read, write: if false; }
+  }
+}

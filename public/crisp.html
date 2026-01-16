@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CRISP — SIP Mentorship</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css">
+</head>
+<body>
+  <div id="header"></div>
+  <div class="wrap">
+    <div class="card">
+      <h2>Insights</h2>
+      <div class="row" style="margin-bottom:10px">
+        <select id="filterDomain" class="light" style="min-width:200px">
+          <option value="All">All domains</option>
+          <option>Consulting</option><option>Product Management</option>
+          <option>Finance</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <input id="filterSenior" placeholder="Filter by senior email (optional)" style="min-width:240px">
+        <input id="filterJunior" placeholder="Filter by junior email (optional)" style="min-width:240px">
+        <button class="btn light" id="btnRefresh">Refresh</button>
+      </div>
+      <div class="row">
+        <span class="badge">Slots released: <span id="mSlotsRel">0</span></span>
+        <span class="badge">Slots booked: <span id="mSlotsBooked">0</span></span>
+        <span class="badge">Demands raised: <span id="mDemands">0</span></span>
+        <span class="badge">Demands fulfilled: <span id="mDemandsFulfilled">0</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Average Feedback (by junior)</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Junior</th><th>Domain</th><th>Avg Comm</th><th>Avg Topic</th><th>Avg Punctuality</th><th>Count</th></tr></thead>
+          <tbody id="avgTBody"><tr><td colspan="6" class="small">Use filters then Refresh.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Slots Released (by senior)</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Senior</th><th>Domain</th><th>Count</th></tr></thead>
+          <tbody id="relTBody"><tr><td colspan="3" class="small">Use filters then Refresh.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Slots Booked (by junior)</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Junior</th><th>Domain</th><th>Count</th></tr></thead>
+          <tbody id="bookTBody"><tr><td colspan="3" class="small">Use filters then Refresh.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Demands (raised vs fulfilled)</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Junior</th><th>Domain</th><th>Raised</th><th>Fulfilled (approved/scheduled/closed)</th></tr></thead>
+          <tbody id="demTBody"><tr><td colspan="4" class="small">Use filters then Refresh.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    onAuthStateChanged(auth,(u)=>{
+      const email=u?.email||"";
+      document.getElementById("header").innerHTML = renderHeader({ title:"SIP Mentorship", email, showAdmin:true, showCrisp:true });
+      attachAuthHandlers();
+    });
+  </script>
+  <script type="module" src="/js/crisp.js"></script>
+</body>
+</html>
