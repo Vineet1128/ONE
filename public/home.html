@@ -116,7 +116,7 @@
 
   <script type="module">
     import { attachAuthHandlers } from "/shared/auth.js";
-    import { auth, db, doc, getDoc, onSnapshot, updateDoc, arrayUnion } from "/shared/firebase.js";
+    import { auth, db, doc, getDoc, setDoc, onSnapshot, arrayUnion } from "/shared/firebase.js?v=1.3";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { renderHeader } from "/shared/ui.js";
 
@@ -229,7 +229,7 @@
             setNotificationStatus("Successfully subscribed to notifications!");
 
             const userDocRef = doc(db, "users", user.uid);
-            await updateDoc(userDocRef, { pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription))) });
+            await setDoc(userDocRef, { pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription))) }, { merge: true });
         } catch (error) {
             console.error("Push subscription failed:", error);
             if (Notification.permission === 'denied') setNotificationStatus("Notifications blocked. Please enable in browser settings.");
