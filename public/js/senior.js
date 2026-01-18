@@ -2,9 +2,9 @@
 
 import {
   auth, db,
-  collection, doc, addDoc, updateDoc, onSnapshot, getDocs, getDoc,
+  collection, doc, addDoc, setDoc, onSnapshot, getDocs, getDoc,
   query, where, serverTimestamp, Timestamp, increment
-} from "/shared/firebase.js";
+} from "/shared/firebase.js?v=1.6";
 import { esc, fmtHM } from "/shared/ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -74,7 +74,7 @@ function wireProvideSlot() {
         const d = pendingApprovedDemand;
 
         // Link both ways
-        await updateDoc(slotRef, { originDemandId: d.id });
+        await setDoc(slotRef, { originDemandId: d.id }, { merge: true });
 
         // Auto-book the requesting junior into this new slot
         const attendee = {
@@ -83,10 +83,10 @@ function wireProvideSlot() {
           name: d.juniorName || d.juniorEmail || "",
           bookedAt: Timestamp.now(),
         };
-        await updateDoc(slotRef, {
+        await setDoc(slotRef, {
           attendees: [attendee],
           bookedCount: 1
-        });
+        }, { merge: true });
 
         // Create booking row (so junior sees it in My Bookings)
         await addDoc(collection(db, "bookings"), {
@@ -118,11 +118,11 @@ function wireProvideSlot() {
         }
 
         // Mark demand scheduled + store linkage
-        await updateDoc(doc(db, "demands", d.id), {
+        await setDoc(doc(db, "demands", d.id), {
           status: "scheduled",
           scheduledSlotId: slotRef.id,
           updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
 
         const note = $("approveNudge");
         if (note) {
@@ -254,7 +254,7 @@ function wireMySlots() {
           )
         );
         for (const bd of bSnap.docs) {
-          await updateDoc(bd.ref, { status: "cancelled", updatedAt: serverTimestamp() });
+          await setDoc(bd.ref, { status: "cancelled", updatedAt: serverTimestamp() }, { merge: true });
         }
 
         // Notify attendees
@@ -271,21 +271,21 @@ function wireMySlots() {
         }
 
         // Cancel the slot
-        await updateDoc(ref, { status: "cancelled", cancelledAt: serverTimestamp() });
+        await setDoc(ref, { status: "cancelled", cancelledAt: serverTimestamp() }, { merge: true });
 
         // Update linked demand -> cancelled
         const originDemandId = slot.originDemandId;
         if (originDemandId) {
-          await updateDoc(doc(db, "demands", originDemandId), {
+          await setDoc(doc(db, "demands", originDemandId), {
             status: "cancelled",
             updatedAt: serverTimestamp()
-          });
+          }, { merge: true });
         } else {
           // fallback: find by scheduledSlotId
           const q = query(collection(db, "demands"), where("scheduledSlotId", "==", id));
           const snapD = await getDocs(q);
           for (const ddoc of snapD.docs) {
-            await updateDoc(ddoc.ref, { status: "cancelled", updatedAt: serverTimestamp() });
+            await setDoc(ddoc.ref, { status: "cancelled", updatedAt: serverTimestamp() }, { merge: true });
           }
         }
       } catch (err) {
@@ -329,11 +329,11 @@ function wireMySlots() {
         const slotRef = doc(db, "slots", id);
 
         // Update the slot first
-        await updateDoc(slotRef, {
+        await setDoc(slotRef, {
           status: "completed",
           completedAt: serverTimestamp(),
           ratings: { comm, topic, punctual: punct }
-        });
+        }, { merge: true });
 
         // Update ONLY this senior’s bookings
         const bSnap = await getDocs(
@@ -344,26 +344,26 @@ function wireMySlots() {
           )
         );
         for (const bd of bSnap.docs) {
-          await updateDoc(bd.ref, {
+          await setDoc(bd.ref, {
             status: "completed",
             updatedAt: serverTimestamp(),
             feedback: { comm, topic, punctual: punct }
-          });
+          }, { merge: true });
         }
 
         // ✅ FIX: mark linked demand as "completed" (not "closed")
         const sSnap = await getDoc(slotRef);
         const originDemandId = sSnap.data()?.originDemandId;
         if (originDemandId) {
-          await updateDoc(doc(db, "demands", originDemandId), {
+          await setDoc(doc(db, "demands", originDemandI), {
             status: "completed",
             updatedAt: serverTimestamp()
-          });
+          }, { merge: true });
         } else {
           const q = query(collection(db, "demands"), where("scheduledSlotId", "==", id));
           const snapD = await getDocs(q);
           for (const ddoc of snapD.docs) {
-            await updateDoc(ddoc.ref, { status: "completed", updatedAt: serverTimestamp() });
+            await setDoc(ddoc.ref, { status: "completed", updatedAt: serverTimestamp() }, { merge: true });
           }
         }
 
@@ -419,19 +419,19 @@ function wireDemands() {
     const id = b.dataset.id, act = b.dataset.act;
 
     if (act === "close") {
-      await updateDoc(doc(db, "demands", id), { status: "closed", updatedAt: serverTimestamp() });
+      await setDoc(doc(db, "demands", id), { status: "closed", updatedAt: serverTimestamp() }, { merge: true });
       return;
     }
     if (act === "approve") {
       const snap = await getDoc(doc(db, "demands", id)); if (!snap.exists()) return;
       const d = { id: snap.id, ...snap.data() };
-      await updateDoc(doc(db, "demands", id), {
+      await setDoc(doc(db, "demands", id), {
         status: "approved",
         approverUid: auth.currentUser.uid,
         approverEmail: auth.currentUser.email,
         decidedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
 
       const list = justApprovedQueue.get(d.domain) || [];
       list.push({ id: d.id, juniorUid: d.juniorUid || null, juniorEmail: d.juniorEmail || null, juniorName: d.juniorName || null });
@@ -445,7 +445,7 @@ function wireDemands() {
       $("provideCard").scrollIntoView({ behavior: "smooth" });
       $("slotDate").focus();
 
-      // hand the pending demand info to the provider
+      // hand the.  demand info to the provider
       if (window.__setPendingDemandForSlotCreation) {
         window.__setPendingDemandForSlotCreation(d);
       }

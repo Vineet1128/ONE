@@ -3,9 +3,9 @@
 
 import {
   auth, db,
-  collection, doc, query, where, onSnapshot, getDoc, addDoc, updateDoc,
+  collection, doc, query, where, onSnapshot, getDoc, addDoc, setDoc,
   serverTimestamp, Timestamp, increment
-} from "../shared/firebase.js";
+} from "../shared/firebase.js?v=1.5";
 import { attachAuthHandlers } from "../shared/auth.js";
 
 /* ---------- helpers ---------- */
@@ -58,10 +58,10 @@ function liveNotifications() {
         .join("");
       for (const n of notes) {
         try {
-          await updateDoc(doc(db, "notifications", n.id), {
+          await setDoc(doc(db, "notifications", n.id), {
             read: true,
             readAt: serverTimestamp(),
-          });
+          }, { merge: true });
         } catch {}
       }
     }
@@ -140,10 +140,10 @@ function wireOpenSlots() {
       };
 
       // Rules enforce +1 invariants; this keeps UI responsive.
-      await updateDoc(ref, {
+      await setDoc(ref, {
         attendees: [...(slot.attendees || []), attendee],
         bookedCount: increment(1),
-      });
+      }, { merge: true });
 
       // Include slotId + owner fields so seniors can manage bookings
       await addDoc(collection(db, "bookings"), {
