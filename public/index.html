@@ -363,14 +363,9 @@
 
     btnGoogle.addEventListener("click", async ()=>{
       const provider = new GoogleAuthProvider();
-      try{
-        const cred = await signInWithPopup(auth, provider);
-        await reload(cred.user);
-        if (!cred.user.emailVerified){
-          setStatus(`Signed in with Google as <span class="mono">${cred.user.email}</span>.`, "ok");
-        }
-        setStatus(`Signed in as <span class="mono">${cred.user.email}</span>. Routing…`, "ok");
-        await routeUser(cred.user);
+      try {
+        await signInWithPopup(auth, provider);
+        // The onAuthStateChanged listener will handle the rest.
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Google sign-in failed."), "bad");
       }
