@@ -28,27 +28,6 @@
     }
 
     #header{ position:sticky; top:0; z-index:30; }
-    .opx-header{
-      display:grid; grid-template-columns:auto 1fr auto; align-items:center;
-      gap:12px; padding:12px 16px;
-      background:rgba(15,23,42,.72); backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--border);
-    }
-    .opx-left{ display:flex; align-items:center; }
-    .brand-logo{ height:28px; width:auto; display:block; border-radius:6px; }
-
-    .opx-center{ text-align:center; line-height:1.05; }
-    .opx-title{ margin:0; font-size:16px; font-weight:700; letter-spacing:.3px; }
-    .opx-sub{ margin:2px 0 0; font-size:10px; color:var(--muted); font-weight:500; }
-
-    .opx-right{ display:flex; align-items:center; }
-    #btnSignOut{
-      border:1px solid var(--border); background:#0b1223; color:#fff;
-      padding:8px 12px; border-radius:12px; font-weight:600;
-      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
-    }
-    #btnSignOut:hover{ border-color:var(--ring); box-shadow:0 8px 24px rgba(2,132,199,.22); }
-    #btnSignOut:active{ transform:translateY(1px); }
 
     .seasonbar{
       display:none; padding:10px 16px; font-size:13px; color:#dbeafe;
@@ -137,23 +116,10 @@
     import { attachAuthHandlers } from "/shared/auth.js";
     import { auth, db, doc, getDoc, onSnapshot } from "/shared/firebase.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { renderHeader } from "/shared/ui.js";
 
-    const isSeniorEmail = (e)=> /^b24.*@astra\.xlri\.ac\.in$/i.test(e||"");
-    const isJuniorEmail = (e)=> /^b25.*@astra\.xlri\.ac\.in$/i.test(e||"");
-
-    const renderHomeHeader = ()=>`
-      <div class="opx-header" role="banner" aria-label="ONE">
-        <div class="opx-left">
-          <img class="brand-logo" src="/assets/logo.png" alt="Prometheus logo">
-        </div>
-        <div class="opx-center">
-          <img class="brand-logo" src="/assets/one_logo.jpeg" alt="one logo">
-        </div>
-        <div class="opx-right">
-          <button id="btnSignOut">Sign out</button>
-        </div>
-      </div>
-    `;
+    const isSeniorEmail = (e)=> /^b24.*@astra.xlri.ac.in$/i.test(e||"");
+    const isJuniorEmail = (e)=> /^b25.*@astra.xlri.ac.in$/i.test(e||"");
 
     const $ = (id)=> document.getElementById(id);
 
@@ -258,7 +224,7 @@
 
     onAuthStateChanged(auth, async (u)=>{
       const email = (u?.email || "");
-      $("header").innerHTML = renderHomeHeader();
+      $("header").innerHTML = renderHeader();
       attachAuthHandlers();
 
       const name = firstNameFrom(u);
