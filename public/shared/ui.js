@@ -1,7 +1,7 @@
 // /shared/ui.js
 export const qs  = (s, r=document) => r.querySelector(s);
 export const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
-export const esc = (s) => String(s||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+export const esc = (s) => String(s||"").replace(/[&<>\'"/]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
 export const fmtHM = (s) => (s||"").padStart(5,"0");
 export const toLocalDate     = (ts) => ts?.toDate?.()?.toLocaleDateString?.() || "";
 export const toLocalDateTime = (ts) => ts?.toDate?.()?.toLocaleString?.()     || "";
@@ -15,7 +15,6 @@ export const toLocalDateTime = (ts) => ts?.toDate?.()?.toLocaleString?.()     ||
  */
 export const renderHeader = (opts) => {
   const {
-    title = "OPAXI",
     showAdmin   = false,
     showCrisp   = false,
     showAcadcom = false,
@@ -51,10 +50,9 @@ export const renderHeader = (opts) => {
         </a>
       </div>
 
-      <!-- Center: OPAXI + tagline -->
+      <!-- Center: ONE logo -->
       <div class="topbar__center">
-        <span class="topbar__title">${esc(title)}</span>
-        <div class="topbar__subtitle">One Point Access for XLRI</div>
+        <img src="/assets/one_logo.jpeg" alt="ONE Logo" style="height: 28px; border-radius: 6px;">
       </div>
 
       <!-- Right: Sign out -->
