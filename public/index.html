@@ -146,11 +146,12 @@
   </main>
 
   <script type="module">
-    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.2";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.8";
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
-      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
       fetchSignInMethodsForEmail,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
@@ -322,6 +323,29 @@
           });
       });
     }
+    
+    // ---------- Handle Google Redirect Result ----------
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This is the signed-in user
+          const user = result.user;
+          // You can access the result token via:
+          // const credential = GoogleAuthProvider.credentialFromResult(result);
+          // const token = credential.accessToken;
+          setStatus(`Signed in as <span class="mono">${user.email}</span>. Routing…`, "ok");
+          routeUser(user);
+        }
+      }).catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // The email of the user's account used.
+        const email = error.customData.email;
+        // The AuthCredential type that was used.
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        setStatus(friendly(errorCode) || (errorMessage || "Google sign-in failed."), "bad");
+      });
 
     // ---------- Identity-first flow ----------
     setMode("identity");
@@ -348,8 +372,8 @@
     btnGoogle.addEventListener("click", async ()=>{
       const provider = new GoogleAuthProvider();
       try {
-        await signInWithPopup(auth, provider);
-        // The onAuthStateChanged listener will handle the rest.
+        await signInWithRedirect(auth, provider);
+        // The getRedirectResult handler will take over from here.
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Google sign-in failed."), "bad");
       }
@@ -432,6 +456,10 @@
           show(btnResend,true);
           return;
         }
+        // Don't re-route if we are coming back from a redirect, getRedirectResult will handle it
+        const result = await getRedirectResult(auth);
+        if(result) return;
+        
         setStatus(`Signed in as <span class="mono">${u.email}</span>. Routing…`, "ok");
         await routeUser(u);
       } catch(err){
