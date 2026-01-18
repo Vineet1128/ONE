@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>ONE</title>
 
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/assets/common/logo.png">
+  <meta name="theme-color" content="#0f172a">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/styles.css"/>
 
@@ -139,16 +143,10 @@
     </form>
 
     <div id="status" class="status">Checking session…</div>
-
-    <div class="divider"></div>
-    <div class="row">
-        <button id="btnEnableNotifications" class="btn">Enable Notifications</button>
-        <button id="btnSendTestNotification" class="btn">Send Test Notification</button>
-    </div>
   </main>
 
   <script type="module">
-    import { auth, db, doc, getDoc, setDoc, serverTimestamp } from "/shared/firebase.js";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp, updateDoc, arrayUnion } from "/shared/firebase.js";
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
@@ -168,27 +166,23 @@
     const formIdentity = $("formIdentity");
     const formLogin    = $("formLogin");
     const formSignup   = $("formSignup");
-
     const idEmail      = $("idEmail");
     const btnContinue  = $("btnContinue");
     const btnGoogle    = $("btnGoogle");
-
     const loginEmail   = $("loginEmail");
     const loginPass    = $("loginPass");
     const btnDoLogin   = $("btnDoLogin");
     const btnForgot    = $("btnForgot");
     const btnResend    = $("btnResend");
     const btnOut       = $("btnSignOut");
-
     const signupEmail  = $("signupEmail");
     const signupPass   = $("signupPass");
     const btnDoSignup  = $("btnDoSignup");
     const btnBackId    = $("btnBackIdentity");
-
     const statusEl     = $("status");
-    
-    const btnEnableNotifications = $("btnEnableNotifications");
-    const btnSendTestNotification = $("btnSendTestNotification");
+
+    // ---------- VAPID Public Key ----------
+    const VAPID_PUBLIC_KEY = "BPpJyJX0nHDwJeb1_MfEitAebbQBPtK58SisZAlzxKblgjPIfq9Slzzm2SvJTlxsl7ofq6iEs5H3p6yYowhQscU";
 
     // ---------- Constants ----------
     const ROLLOVER_MONTH = 3;   // March
@@ -200,7 +194,6 @@
     function show(el, on=true){ if(!el) return; el.classList.toggle("hide", !on); }
     function setStatus(msg, kind=""){ statusEl.classList.remove("ok","bad"); if(kind) statusEl.classList.add(kind); statusEl.innerHTML = msg; }
     function setMode(mode, emailValue=""){
-      // modes: identity | login | signup
       show(formIdentity, mode==="identity");
       show(formLogin,    mode==="login");
       show(formSignup,   mode==="signup");
@@ -209,7 +202,6 @@
       if (mode==="identity"){ setStatus("Enter your email to continue."); }
     }
 
-    // ---------- Friendly errors ----------
     function friendly(code){
       switch(code){
         case "auth/email-already-in-use": return "Account already exists. Please login instead.";
@@ -223,7 +215,6 @@
       }
     }
 
-    // ---------- Roles + routing (your existing logic preserved) ----------
     async function getRolesByEmail(email){
       const ref1 = doc(db, "roles", lcEmail(email));
       const s1 = await getDoc(ref1); if (s1.exists()) return s1.data()||{};
@@ -264,6 +255,9 @@
       return true;
     }
     async function routeUser(user){
+      // First, attempt to subscribe the user to push notifications
+      await subscribeToPushNotifications(user);
+
       const uref = doc(db,"users",user.uid); const usnap = await getDoc(uref);
       if (usnap.exists()){
         const d = usnap.data()||{};
@@ -275,63 +269,90 @@
         }
         if (d.status==="pending") return window.location.replace("/pending.html");
       }
-      // not onboarded → try auto paths
       if (await ensureUserDocForStudent(user)) return window.location.replace("/home.html");
       if (await ensureUserDocForFacultyIfAllowlisted(user)) return window.location.replace("/faculty/home.html");
-      return window.location.replace("/onboarding.html"); // alumni / unknown
+      return window.location.replace("/onboarding.html");
     }
 
-    // ---------- Notifications ----------
-    function requestNotificationPermission() {
-      if (!("Notification" in window)) {
-        setStatus("This browser does not support desktop notification", "bad");
+    // ---------- Push Notifications ----------
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    async function subscribeToPushNotifications(user) {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setStatus("Push notifications not supported by this browser.", "bad");
         return;
       }
-      Notification.requestPermission().then(function (permission) {
-        if (permission === "granted") {
-          setStatus("Notification permission granted.", "ok");
-        } else {
-          setStatus("Notification permission denied.", "bad");
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+          // Already subscribed
+          setStatus("Already subscribed to notifications.", "ok");
+          return;
         }
+
+        const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey
+        });
+
+        setStatus("Subscribed to notifications successfully!", "ok");
+
+        // Save the subscription to Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, {
+            pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription)))
+        });
+
+      } catch (error) {
+        console.error("Failed to subscribe to push notifications:", error);
+        if (Notification.permission === 'denied') {
+          setStatus("Notification permission was denied. Please enable it in your browser settings.", "bad");
+        } else {
+          setStatus("Failed to subscribe to notifications.", "bad");
+        }
+      }
+    }
+
+    // ---------- Service Worker Registration ----------
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+            setStatus("Could not set up notifications.", "bad");
+          });
       });
     }
 
-    function sendNotification(title, body) {
-      if (Notification.permission === "granted") {
-        new Notification(title, { body: body });
-      } else {
-        setStatus("You need to enable notifications first!", "bad");
-      }
-    }
-    
-    btnEnableNotifications.addEventListener("click", requestNotificationPermission);
-    btnSendTestNotification.addEventListener("click", () => sendNotification('Hello!', 'This is a test notification from ONE.'));
-
     // ---------- Identity-first flow ----------
     setMode("identity");
-
     formIdentity.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (idEmail.value||"").trim();
       if (!email) return;
-
       btnContinue.disabled = true; btnContinue.style.opacity="0.7";
       try{
-        // Which methods exist for this email?
         const methods = await fetchSignInMethodsForEmail(auth, email);
-        // If password is configured for this email → login
-        if (methods.includes("password")){
-          setMode("login", email);
-          return;
-        }
-        // If Google is configured (but no password) → suggest Google
+        if (methods.includes("password")){ setMode("login", email); return; }
         if (methods.includes("google.com")){
           setStatus("This account uses Google Sign-In. Click the button above to continue.", "ok");
-          setMode("identity");
-          idEmail.value = email;
-          return;
+          setMode("identity"); idEmail.value = email; return;
         }
-        // No methods → go to signup with this email prefilled
         setMode("signup", email);
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Could not check account."), "bad");
@@ -340,14 +361,12 @@
       }
     });
 
-    // Google button is explicit (no popup until user clicks)
     btnGoogle.addEventListener("click", async ()=>{
       const provider = new GoogleAuthProvider();
       try{
         const cred = await signInWithPopup(auth, provider);
         await reload(cred.user);
         if (!cred.user.emailVerified){
-          // Google accounts are already verified by provider; but guard anyway.
           setStatus(`Signed in with Google as <span class="mono">${cred.user.email}</span>.`, "ok");
         }
         setStatus(`Signed in as <span class="mono">${cred.user.email}</span>. Routing…`, "ok");
@@ -357,20 +376,18 @@
       }
     });
 
-    // ---------- Login ----------
+    // ---------- Login & Signup ----------
     formLogin.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (loginEmail.value||"").trim();
       const pass  = (loginPass.value||"");
-
       btnDoLogin.disabled = true; btnDoLogin.style.opacity="0.7";
       try{
         const cred = await signInWithEmailAndPassword(auth, email, pass);
         await reload(cred.user);
         if (!cred.user.emailVerified){
           setStatus(`Email not verified for <span class="mono">${email}</span>.`, "bad");
-          show(btnResend,true); show(btnOut,true);
-          return;
+          show(btnResend,true); show(btnOut,true); return;
         }
         setStatus(`Signed in as <span class="mono">${email}</span>. Routing…`, "ok");
         await routeUser(cred.user);
@@ -381,44 +398,18 @@
       }
     });
 
-    btnForgot.addEventListener("click", async ()=>{
-      const email = (loginEmail.value||"").trim();
-      if (!email){ setStatus("Enter your email above, then click ‘Forgot password?’", "bad"); return; }
-      try{
-        await sendPasswordResetEmail(auth, email);
-        setStatus(`Password reset email sent to <span class="mono">${email}</span>.`, "ok");
-      } catch(err){
-        setStatus(friendly(err?.code) || (err?.message || "Could not send reset email."), "bad");
-      }
-    });
-
-    btnResend.addEventListener("click", async ()=>{
-      const u = auth.currentUser; if (!u) return;
-      try{ await sendEmailVerification(u); setStatus(`Verification email sent again to <span class="mono">${u.email}</span>.`, "ok"); }
-      catch(err){ setStatus(`Could not resend verification email. ${err?.message||""}`, "bad"); }
-    });
-
-    btnOut.addEventListener("click", async ()=>{
-      await signOut(auth); setMode("identity"); setStatus("Signed out.");
-      show(btnResend,false); show(btnOut,false);
-    });
-
-    // ---------- Signup ----------
     formSignup.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (signupEmail.value||"").trim();
       const pass  = (signupPass.value||"");
-
       btnDoSignup.disabled = true; btnDoSignup.style.opacity="0.7";
       try{
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await sendEmailVerification(cred.user);
         setStatus(`Account created for <span class="mono">${email}</span>. Verify your email, then return here to login.`, "ok");
         show(btnResend,true); show(btnOut,true);
-        // Take user back to Login with email prefilled
         setMode("login", email);
       } catch(err){
-        // If account already exists, push to login
         if (err?.code === "auth/email-already-in-use"){
           setMode("login", email);
           setStatus("Account already exists. Please login or reset your password.", "bad");
@@ -431,6 +422,25 @@
     });
 
     btnBackId.addEventListener("click", ()=> setMode("identity"));
+    btnForgot.addEventListener("click", async ()=>{
+      const email = (loginEmail.value||"").trim();
+      if (!email){ setStatus("Enter your email above, then click ‘Forgot password?’", "bad"); return; }
+      try{
+        await sendPasswordResetEmail(auth, email);
+        setStatus(`Password reset email sent to <span class="mono">${email}</span>.`, "ok");
+      } catch(err){
+        setStatus(friendly(err?.code) || (err?.message || "Could not send reset email."), "bad");
+      }
+    });
+    btnResend.addEventListener("click", async ()=>{
+      const u = auth.currentUser; if (!u) return;
+      try{ await sendEmailVerification(u); setStatus(`Verification email sent again to <span class="mono">${u.email}</span>.`, "ok"); }
+      catch(err){ setStatus(`Could not resend verification email. ${err?.message||""}`, "bad"); }
+    });
+    btnOut.addEventListener("click", async ()=>{
+      await signOut(auth); setMode("identity"); setStatus("Signed out.");
+      show(btnResend,false); show(btnOut,false);
+    });
 
     // ---------- Session listener ----------
     onAuthStateChanged(auth, async (u)=>{

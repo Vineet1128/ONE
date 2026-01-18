@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>ONE — Home</title>
 
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/assets/common/logo.png">
+  <meta name="theme-color" content="#0f172a">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/styles.css"/>
 
@@ -85,8 +89,6 @@
       <button id="btnAdminView"   class="btn light" style="display:none">Admin</button>
       <button id="btnCrispView"   class="btn light" style="display:none">CRISP</button>
       <button id="btnAcadcomView" class="btn light" style="display:none">Acadcom</button>
-
-      <!-- ✅ NEW: ALCOM -->
       <button id="btnAlcomView"   class="btn light" style="display:none">Alcom</button>
     </div>
 
@@ -108,16 +110,17 @@
 
     <div class="note-stub">
       <strong>Notifications</strong><br>
-      <span class="small">You’ll see booking updates and reminders here.</span>
+      <span id="notification-status" class="small">You’ll see booking updates and reminders here.</span>
     </div>
   </div>
 
   <script type="module">
     import { attachAuthHandlers } from "/shared/auth.js";
-    import { auth, db, doc, getDoc, onSnapshot } from "/shared/firebase.js";
+    import { auth, db, doc, getDoc, onSnapshot, updateDoc, arrayUnion } from "/shared/firebase.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { renderHeader } from "/shared/ui.js";
 
+    const VAPID_PUBLIC_KEY = "BPpJyJX0nHDwJeb1_MfEitAebbQBPtK58SisZAlzxKblgjPIfq9Slzzm2SvJTlxsl7ofq6iEs5H3p6yYowhQscU";
     const isSeniorEmail = (e)=> /^b24.*@astra.xlri.ac.in$/i.test(e||"");
     const isJuniorEmail = (e)=> /^b25.*@astra.xlri.ac.in$/i.test(e||"");
 
@@ -140,9 +143,7 @@
     function setPrepLink({ email, reverse }) {
       const btn  = $("btnPreparation");
       const hint = $("prepHint");
-      if (!btn) return;
-
-      if (__prepDisabled) return;
+      if (!btn || __prepDisabled) return;
 
       const senior = isSeniorEmail(email);
       const junior = isJuniorEmail(email);
@@ -172,100 +173,104 @@
     }
 
     function applyHomeButtonFlags({ showAcademics=true, showPreparation=true }){
-      const btnA = $("btnAcademics");
-      const btnP = $("btnPreparation");
-      const acadHint = $("acadHint");
-      const prepHint = $("prepHint");
-
+      const btnA = $("btnAcademics"), acadHint = $("acadHint");
       __acadDisabled = !showAcademics;
       if (btnA){
-        if (showAcademics){
-          btnA.classList.remove("is-disabled");
-          btnA.removeAttribute("aria-disabled");
-          if (!btnA.getAttribute("href")) btnA.href = "/academics.html";
-          if (acadHint) acadHint.textContent = "";
-        } else {
-          btnA.classList.add("is-disabled");
-          btnA.setAttribute("aria-disabled","true");
-          btnA.removeAttribute("href");
-          if (acadHint) acadHint.textContent = "Coming soon!";
-        }
+        btnA.classList.toggle("is-disabled", !showAcademics);
+        btnA.setAttribute("aria-disabled", !showAcademics);
+        if(showAcademics) btnA.href = "/academics.html"; else btnA.removeAttribute("href");
+        if(acadHint) acadHint.textContent = showAcademics ? "" : "Coming soon!";
       }
 
+      const btnP = $("btnPreparation"), prepHint = $("prepHint");
       __prepDisabled = !showPreparation;
       if (btnP){
-        if (showPreparation){
-          btnP.classList.remove("is-disabled");
-          btnP.removeAttribute("aria-disabled");
-          if (prepHint) prepHint.textContent = "";
-        } else {
-          btnP.classList.add("is-disabled");
-          btnP.setAttribute("aria-disabled","true");
-          btnP.removeAttribute("href");
-          if (prepHint) prepHint.textContent = "Coming soon!";
-        }
+        btnP.classList.toggle("is-disabled", !showPreparation);
+        btnP.setAttribute("aria-disabled", !showPreparation);
+        if(prepHint) prepHint.textContent = showPreparation ? "" : "Coming soon!";
       }
     }
 
-    // ✅ NEW: fetch roles (lowercase first, then exact) — matches your rules pattern
     async function getRolesByEmail(email){
-      const exact = (email || "").trim();
-      const lower = exact.toLowerCase();
+      const exact = (email || "").trim(), lower = exact.toLowerCase();
       try{
-        const s1 = await getDoc(doc(db, "roles", lower));
-        if (s1.exists()) return s1.data() || {};
-        const s2 = await getDoc(doc(db, "roles", exact));
-        if (s2.exists()) return s2.data() || {};
-      } catch(e){
-        console.warn("Roles lookup failed:", e);
-      }
+        const s1 = await getDoc(doc(db, "roles", lower)); if (s1.exists()) return s1.data() || {};
+        const s2 = await getDoc(doc(db, "roles", exact)); if (s2.exists()) return s2.data() || {};
+      } catch(e){ console.warn("Roles lookup failed:", e); }
       return {};
     }
 
+    // ---------- Push Notifications ----------
+    function setNotificationStatus(message) {
+        const el = $('notification-status');
+        if (el) el.textContent = message;
+    }
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+
+    async function subscribeToPushNotifications(user) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            setNotificationStatus("Push notifications not supported.");
+            return;
+        }
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            let subscription = await registration.pushManager.getSubscription();
+            if (subscription) { setNotificationStatus("You are subscribed to notifications."); return; }
+
+            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+            setNotificationStatus("Successfully subscribed to notifications!");
+
+            const userDocRef = doc(db, "users", user.uid);
+            await updateDoc(userDocRef, { pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription))) });
+        } catch (error) {
+            console.error("Push subscription failed:", error);
+            if (Notification.permission === 'denied') setNotificationStatus("Notifications blocked. Please enable in browser settings.");
+            else setNotificationStatus("Could not subscribe to notifications.");
+        }
+    }
+
+    // ---------- Service Worker Registration ----------
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.error('SW registration failed: ', err);
+          setNotificationStatus("Failed to set up notifications.");
+        });
+      });
+    }
+
     onAuthStateChanged(auth, async (u)=>{
-      const email = (u?.email || "");
+      if (!u) return; // Should be handled by attachAuthHandlers, but as a guard
+      const email = u.email || "";
       $("header").innerHTML = renderHeader();
       attachAuthHandlers();
 
-      const name = firstNameFrom(u);
-      const handle = emailHandle(email);
+      const name = firstNameFrom(u), handle = emailHandle(email);
       $("welcome").textContent = handle ? `Welcome, ${name} (${handle})` : `Welcome, ${name}`;
+      
+      // Attempt to subscribe to push notifications
+      subscribeToPushNotifications(u);
 
-      // ✅ NEW: show role pills (Admin/CRISP/Acadcom/Alcom) — UI only, doesn’t affect existing flows
       const roles = await getRolesByEmail(email);
-
-      const btnAdmin   = $("btnAdminView");
-      const btnCrisp   = $("btnCrispView");
-      const btnAcadcom = $("btnAcadcomView");
-      const btnAlcom   = $("btnAlcomView");
-
       const isAdmin = !!roles.admin || !!roles.isAdmin || (email === "b24408@astra.xlri.ac.in");
-      if (btnAdmin){
-        btnAdmin.style.display = isAdmin ? "inline-flex" : "none";
-        if (isAdmin) btnAdmin.onclick = ()=> window.location.href = "/admin.html";
-      }
-
       const isCrisp = !!roles.isCrisp;
-      if (btnCrisp){
-        btnCrisp.style.display = isCrisp ? "inline-flex" : "none";
-        if (isCrisp) btnCrisp.onclick = ()=> window.location.href = "/crisp.html";
-      }
-
       const isAcadcom = !!roles.acadcom;
-      if (btnAcadcom){
-        btnAcadcom.style.display = isAcadcom ? "inline-flex" : "none";
-        if (isAcadcom) btnAcadcom.onclick = ()=> window.location.href = "/acadcom.html";
-      }
-
-      // ✅ NEW: ALCOM
       const isAlcom = !!roles.alcom;
-      if (btnAlcom){
-        btnAlcom.style.display = isAlcom ? "inline-flex" : "none";
-        if (isAlcom) btnAlcom.onclick = ()=> window.location.href = "/alcom.html";
-      }
+
+      if ($("btnAdminView")) { $("btnAdminView").style.display = isAdmin ? "inline-flex" : "none"; if(isAdmin) $("btnAdminView").onclick = ()=> window.location.href = "/admin.html"; }
+      if ($("btnCrispView")) { $("btnCrispView").style.display = isCrisp ? "inline-flex" : "none"; if(isCrisp) $("btnCrispView").onclick = ()=> window.location.href = "/crisp.html"; }
+      if ($("btnAcadcomView")) { $("btnAcadcomView").style.display = isAcadcom ? "inline-flex" : "none"; if(isAcadcom) $("btnAcadcomView").onclick = ()=> window.location.href = "/acadcom.html"; }
+      if ($("btnAlcomView")) { $("btnAlcomView").style.display = isAlcom ? "inline-flex" : "none"; if(isAlcom) $("btnAlcomView").onclick = ()=> window.location.href = "/alcom.html"; }
 
       setPrepLink({ email, reverse:false });
-
       let lastFlags = { showAcademics:true, showPreparation:true };
 
       try {
@@ -275,11 +280,7 @@
         const reverse = !!d.reverseRoles;
         const seasonName = d.seasonName || "";
         setSeasonBar({ seasonName, reverse });
-
-        lastFlags = {
-          showAcademics:   d.homeShowAcademics   !== false,
-          showPreparation: d.homeShowPreparation !== false
-        };
+        lastFlags = { showAcademics: d.homeShowAcademics !== false, showPreparation: d.homeShowPreparation !== false };
         applyHomeButtonFlags(lastFlags);
         setPrepLink({ email, reverse });
 
@@ -287,20 +288,15 @@
           const dd = s.exists() ? (s.data()||{}) : {};
           const rev = !!dd.reverseRoles;
           setSeasonBar({ seasonName:(dd.seasonName||""), reverse:rev });
-
-          const flags = {
-            showAcademics:   dd.homeShowAcademics   !== false,
-            showPreparation: dd.homeShowPreparation !== false
-          };
-          if (flags.showAcademics !== lastFlags.showAcademics ||
-              flags.showPreparation !== lastFlags.showPreparation){
+          const flags = { showAcademics: dd.homeShowAcademics !== false, showPreparation: dd.homeShowPreparation !== false };
+          if (flags.showAcademics !== lastFlags.showAcademics || flags.showPreparation !== lastFlags.showPreparation){
             lastFlags = flags;
             applyHomeButtonFlags(flags);
           }
           setPrepLink({ email, reverse:rev });
         });
       } catch (e) {
-        console.warn("Season/settings read failed; using defaults.", e);
+        console.warn("Settings read failed; using defaults.", e);
         setSeasonBar({ seasonName:"", reverse:false });
         applyHomeButtonFlags(lastFlags);
         setPrepLink({ email, reverse:false });
@@ -309,9 +305,7 @@
       try {
         const mod = await import("/modules/home/AttendanceWidget.js");
         new mod.AttendanceWidget().init();
-      } catch (e) {
-        console.warn("Attendance widget not loaded (skipping):", e);
-      }
+      } catch (e) { console.warn("Attendance widget not loaded:", e); }
     });
   </script>
 </body>
