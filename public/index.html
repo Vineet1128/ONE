@@ -150,8 +150,7 @@
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
-      signInWithRedirect,
-      getRedirectResult,
+      signInWithPopup,
       fetchSignInMethodsForEmail,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
@@ -338,16 +337,6 @@
       });
     }
 
-    // ---------- Handle Google Redirect Result (fires on page load after redirect) ----------
-    getRedirectResult(auth)
-      .catch((error) => {
-        // Handle Errors here. This is triggered only if there's an error during the redirect.
-        // The success case is handled by onAuthStateChanged.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        setStatus(friendly(errorCode) || (errorMessage || "Google sign-in failed."), "bad");
-      });
-
     // ---------- Central Session listener (the single source of truth) ----------
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -393,7 +382,7 @@
     btnGoogle.addEventListener("click", async ()=> {
       const provider = new GoogleAuthProvider();
       try {
-        await signInWithRedirect(auth, provider);
+        await signInWithPopup(auth, provider);
         // The onAuthStateChanged observer will handle the successful sign-in.
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Google sign-in failed."), "bad");
