@@ -139,6 +139,12 @@
     </form>
 
     <div id="status" class="status">Checking session…</div>
+
+    <div class="divider"></div>
+    <div class="row">
+        <button id="btnEnableNotifications" class="btn">Enable Notifications</button>
+        <button id="btnSendTestNotification" class="btn">Send Test Notification</button>
+    </div>
   </main>
 
   <script type="module">
@@ -180,6 +186,9 @@
     const btnBackId    = $("btnBackIdentity");
 
     const statusEl     = $("status");
+    
+    const btnEnableNotifications = $("btnEnableNotifications");
+    const btnSendTestNotification = $("btnSendTestNotification");
 
     // ---------- Constants ----------
     const ROLLOVER_MONTH = 3;   // March
@@ -271,6 +280,32 @@
       if (await ensureUserDocForFacultyIfAllowlisted(user)) return window.location.replace("/faculty/home.html");
       return window.location.replace("/onboarding.html"); // alumni / unknown
     }
+
+    // ---------- Notifications ----------
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        setStatus("This browser does not support desktop notification", "bad");
+        return;
+      }
+      Notification.requestPermission().then(function (permission) {
+        if (permission === "granted") {
+          setStatus("Notification permission granted.", "ok");
+        } else {
+          setStatus("Notification permission denied.", "bad");
+        }
+      });
+    }
+
+    function sendNotification(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body: body });
+      } else {
+        setStatus("You need to enable notifications first!", "bad");
+      }
+    }
+    
+    btnEnableNotifications.addEventListener("click", requestNotificationPermission);
+    btnSendTestNotification.addEventListener("click", () => sendNotification('Hello!', 'This is a test notification from ONE.'));
 
     // ---------- Identity-first flow ----------
     setMode("identity");
