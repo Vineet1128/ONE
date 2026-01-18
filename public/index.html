@@ -146,7 +146,7 @@
   </main>
 
   <script type="module">
-    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.3";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.8";
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
@@ -189,7 +189,7 @@
     const ROLLOVER_MONTH = 3;   // March
     const ROLLOVER_DAY   = 15;  // 15th
     const PROGRAM_YEARS_DEFAULT = 2;
-    const studentMatch = (email)=> /^b(\\d{2}).*@astra\\.xlri\\.ac\\.in$/i.exec(email||"");
+    const studentMatch = (email)=> /^b(\d{2}).*@astra\.xlri\.ac\.in$/i.exec(email||"");
     const lcEmail = (e)=> (e||"").toLowerCase();
 
     function show(el, on=true){ if(!el) return; el.classList.toggle("hide", !on); }
