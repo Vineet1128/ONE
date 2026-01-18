@@ -146,7 +146,7 @@
   </main>
 
   <script type="module">
-    import { auth, db, doc, getDoc, setDoc, serverTimestamp, updateDoc, arrayUnion } from "/shared/firebase.js";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.1";
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
@@ -255,8 +255,8 @@
       return true;
     }
     async function routeUser(user){
-      // First, attempt to subscribe the user to push notifications
-      await subscribeToPushNotifications(user);
+      // Non-blocking call to subscribe to push notifications
+      subscribeToPushNotifications(user);
 
       const uref = doc(db,"users",user.uid); const usnap = await getDoc(uref);
       if (usnap.exists()){
@@ -288,18 +288,14 @@
 
     async function subscribeToPushNotifications(user) {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        setStatus("Push notifications not supported by this browser.", "bad");
+        console.warn("Push notifications not supported by this browser.");
         return;
       }
       try {
         const registration = await navigator.serviceWorker.ready;
         let subscription = await registration.pushManager.getSubscription();
 
-        if (subscription) {
-          // Already subscribed
-          setStatus("Already subscribed to notifications.", "ok");
-          return;
-        }
+        if (subscription) { return; } // Already subscribed
 
         const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
         subscription = await registration.pushManager.subscribe({
@@ -307,34 +303,22 @@
           applicationServerKey: applicationServerKey
         });
 
-        setStatus("Subscribed to notifications successfully!", "ok");
-
-        // Save the subscription to Firestore
+        // Save the subscription to Firestore, creating/merging the doc as needed.
         const userDocRef = doc(db, "users", user.uid);
-        await updateDoc(userDocRef, {
+        await setDoc(userDocRef, {
             pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription)))
-        });
+        }, { merge: true }); // Using setDoc with merge to avoid race condition
 
       } catch (error) {
         console.error("Failed to subscribe to push notifications:", error);
-        if (Notification.permission === 'denied') {
-          setStatus("Notification permission was denied. Please enable it in your browser settings.", "bad");
-        } else {
-          setStatus("Failed to subscribe to notifications.", "bad");
-        }
       }
     }
 
     // ---------- Service Worker Registration ----------
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(error => {
-            console.log('ServiceWorker registration failed: ', error);
-            setStatus("Could not set up notifications.", "bad");
+        navigator.serviceWorker.register('/sw.js').catch(error => {
+            console.error('ServiceWorker registration failed: ', error);
           });
       });
     }
