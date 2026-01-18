@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Resources — OPAXI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css">
+
+  <style>
+    /* Ensure full-height dark background on all devices (scoped to this page) */
+    html, body { min-height: 100svh; background: var(--bg); }
+
+    .wrap{max-width:960px;margin:16px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:var(--br);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:18px;margin:18px 0;border:1px solid var(--line)}
+    .hint{color:var(--muted)}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .btn.light{background:rgba(255,255,255,.06); color:#e5e7eb; border:1px solid var(--line);}
+    .pill{background:rgba(255,255,255,.08); color:#e5e7eb; border:1px solid var(--line)}
+    .panel{border:1px solid var(--line); border-radius:16px; padding:16px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02))}
+    .panel h4{margin:0 0 8px}
+    .spacer{height:12px}
+
+    /* Compact header actions (Home + Sign out in one row, no wrap) */
+    .hdr-actions { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; white-space:nowrap; }
+    .btn.icon-only { width:32px; height:32px; padding:0; display:grid; place-items:center; }
+    .btn.icon-only svg { width:15px; height:15px; }
+    #btnSignOut.compact { padding:6px 10px; height:32px; font-size:13px; line-height:1; }
+  </style>
+</head>
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="card">
+      <h2>Resources</h2>
+      <p id="resDesc" class="hint">Loading…</p>
+
+      <label for="termPick">Term</label>
+      <select id="termPick"></select>
+
+      <div class="spacer"></div>
+
+      <div class="panel row" style="justify-content:space-between">
+        <div class="hint">Showing resources for <b id="termLabel">—</b></div>
+        <a id="openRes" class="btn" href="#" target="_blank" rel="noopener" style="display:none">Open Term Resources</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { RoutineService } from "/shared/services/RoutineService.js";
+
+    const norm = s => String(s ?? "").trim();
+    const isSeniorEmail = e => /^b24/i.test(e || "") && /@astra\.xlri\.ac\.in$/i.test(e || "");
+    const isJuniorEmail = e => /^b25/i.test(e || "") && /@astra\.xlri\.ac\.in$/i.test(e || "");
+
+    onAuthStateChanged(auth, async (u) => {
+      const email = u?.email || "";
+      const cohort = isSeniorEmail(email) ? "senior" : isJuniorEmail(email) ? "junior" : "";
+
+      // Standard header
+      document.getElementById("header").innerHTML = renderHeader({
+        title: "OPAXI",
+        email,
+        showAdmin: true,
+        showCrisp: true,
+        showAcadcom: true
+      });
+      attachAuthHandlers();
+
+      // Inject compact Home button beside Sign out (same pattern as Acadcom)
+      const btnSignOut = document.getElementById("btnSignOut");
+      if (btnSignOut && !document.getElementById("btnGoHome")) {
+        btnSignOut.classList.add("compact");
+        const home = document.createElement("a");
+        home.id = "btnGoHome";
+        home.href = "/home.html";
+        home.className = "btn light icon-only";
+        home.title = "Home";
+        home.setAttribute("aria-label", "Home");
+        home.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11l9-7 9 7"></path>
+            <path d="M9 22V12h6v10"></path>
+          </svg>`;
+        const rightCluster = btnSignOut.parentElement;
+        rightCluster.classList.add("hdr-actions");
+        rightCluster.style.display = "flex";
+        rightCluster.style.alignItems = "center";
+        rightCluster.style.gap = "6px";
+        rightCluster.style.flexWrap = "nowrap";
+        rightCluster.style.whiteSpace = "nowrap";
+        rightCluster.insertBefore(home, btnSignOut);
+      }
+
+      // Load routine settings (where the 6 term URLs live)
+      const s = await RoutineService.getSettings();
+
+      // Determine allowed terms and current term
+      const currentTerm = cohort === "senior" ? (s.seniorTerm || s.termSenior || "")
+                        : cohort === "junior" ? (s.juniorTerm || s.termJunior || "")
+                        : "";
+      const maxTerm = cohort === "senior" ? 6 : 3;
+      const termPick = document.getElementById("termPick");
+      const termLabel = document.getElementById("termLabel");
+      const desc = document.getElementById("resDesc");
+      const openRes = document.getElementById("openRes");
+
+      // Options
+      termPick.innerHTML = Array.from({length:maxTerm}, (_,i)=>i+1)
+        .map(n => `<option value="${n}">${n}</option>`).join("");
+
+      // Select current term if valid, else 1
+      const initial = (Number(currentTerm) >= 1 && Number(currentTerm) <= maxTerm) ? Number(currentTerm) : 1;
+      termPick.value = String(initial);
+
+      // Description
+      desc.textContent =
+        `${cohort ? cohort[0].toUpperCase()+cohort.slice(1) : "Student"} resources. ` +
+        `Current term: ${currentTerm || "—"}. ` +
+        `Choose a term to open its link.`;
+
+      // Update button/href when term changes
+      function refresh() {
+        const t = Number(termPick.value);
+        termLabel.textContent = `Term ${t}`;
+
+        // Field names Acadcom saves in /settings/routine
+        const key = `term${t}ResourcesUrl`;
+        const url = norm(s[key]);
+
+        if (url) {
+          openRes.href = url;
+          openRes.style.display = "inline-flex";
+          openRes.textContent = `Open Term ${t} Resources`;
+        } else {
+          openRes.href = "#";
+          openRes.style.display = "none";
+        }
+      }
+      termPick.onchange = refresh;
+      refresh();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>ONE — Alcom</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css"/>
+
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#0b1223; --text:#e5e7eb; --muted:#94a3b8;
+      --ring:rgba(59,130,246,.35); --border:rgba(148,163,184,.18);
+    }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      padding:16px;
+    }
+    .wrap{ max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:16px; padding:16px;
+      box-shadow:0 10px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    h1{ margin:0; font-size:20px; }
+    p{ margin:6px 0 0; color:var(--muted); }
+    .status{ color:var(--muted); font-size:13px; margin-top:10px; }
+    .btn{
+      padding:9px 12px; border-radius:12px; border:1px solid var(--border);
+      background:#111827; color:#fff; font-weight:800; cursor:pointer;
+    }
+    .btn:hover{ border-color:var(--ring); }
+    .btn.primary{ background:linear-gradient(90deg, rgba(59,130,246,.95), rgba(34,211,238,.85)); border:none; }
+    .btn.light{ background:rgba(255,255,255,.06); border:1px solid rgba(148,163,184,.18); }
+    .btn.danger{ border-color: rgba(239,68,68,.35); }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ border-bottom:1px solid rgba(148,163,184,.18); padding:8px; text-align:left; font-size:14px; vertical-align:top; }
+    th{ color:#cbd5e1; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+    .mono{ font-family:ui-monospace,Menlo,Consolas,monospace; color:#e2e8f0; }
+    .small{ font-size:12px; color:var(--muted); }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div>
+          <h1>Alcom — Alumni Approvals</h1>
+          <p>Approve or reject alumni onboarding requests.</p>
+        </div>
+        <div class="row" style="justify-content:flex-end">
+          <button id="btnHome" class="btn light">Home</button>
+          <button id="btnRefresh" class="btn light">Refresh</button>
+          <button id="btnSignOut" class="btn">Sign out</button>
+        </div>
+      </div>
+      <div id="status" class="status">Checking access…</div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Astra ID</th>
+            <th>Contact</th>
+            <th>Batch/Campus</th>
+            <th>Requested</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="6" class="small">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      auth, db,
+      doc, getDoc, setDoc, updateDoc,
+      collection, query, where, getDocs,
+      serverTimestamp
+    } from "/shared/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const $ = (id)=>document.getElementById(id);
+    const lc = (s)=>(s||"").toLowerCase();
+    const fmt = (ts)=> ts?.toDate?.()?.toLocaleString?.() || "";
+
+    function setStatus(msg){ $("status").textContent = msg; }
+
+    async function getRolesByEmail(email){
+      const r1 = await getDoc(doc(db,"roles", lc(email)));
+      if (r1.exists()) return r1.data() || {};
+      const r2 = await getDoc(doc(db,"roles", email));
+      if (r2.exists()) return r2.data() || {};
+      return {};
+    }
+
+    async function assertAccess(u){
+      const email = u?.email || "";
+      const roles = await getRolesByEmail(email);
+      const isFounder = email === "b24408@astra.xlri.ac.in";
+      const isAdmin = roles.admin === true || roles.isAdmin === true || isFounder;
+      const isAlcom = roles.alcom === true;
+      return { ok: (isAdmin || isAlcom), isAdmin, isAlcom, email };
+    }
+
+    async function loadPending(){
+      const tbody = $("rows");
+      tbody.innerHTML = `<tr><td colspan="6" class="small">Loading pending requests…</td></tr>`;
+
+      const qy = query(collection(db,"onboardingRequests"), where("status","==","pending"));
+      const snap = await getDocs(qy);
+
+      if (snap.empty){
+        tbody.innerHTML = `<tr><td colspan="6" class="small">No pending requests.</td></tr>`;
+        return;
+      }
+
+      const out = [];
+      snap.forEach((d)=>{
+        const r = d.data() || {};
+        const contact = [
+          r.phone ? `📞 ${r.phone}` : "",
+          r.personalEmail ? `✉️ ${r.personalEmail}` : ""
+        ].filter(Boolean).join("<br>") || "<span class='small'>—</span>";
+
+        const batch = [
+          r.startYear ? `Start: ${r.startYear}` : "",
+          r.campus ? `Campus: ${r.campus}` : ""
+        ].filter(Boolean).join("<br>") || "<span class='small'>—</span>";
+
+        out.push(`
+          <tr>
+            <td><div class="mono">${r.email || ""}</div><div class="small">uid: ${r.uid || ""}</div></td>
+            <td class="mono">${r.astraId || ""}</td>
+            <td>${contact}</td>
+            <td>${batch}</td>
+            <td class="small">${fmt(r.createdAt) || "—"}</td>
+            <td>
+              <button class="btn primary" data-act="approve" data-id="${d.id}" data-uid="${r.uid}">Approve</button>
+              <button class="btn danger" data-act="reject" data-id="${d.id}" data-uid="${r.uid}">Reject</button>
+            </td>
+          </tr>
+        `);
+      });
+
+      tbody.innerHTML = out.join("");
+    }
+
+    async function approve(reqId, uid){
+      await updateDoc(doc(db,"onboardingRequests", reqId), {
+        status: "approved",
+        decidedAt: serverTimestamp()
+      });
+      await setDoc(doc(db,"users", uid), {
+        uid,
+        persona: "alumni",
+        status: "active",
+        updatedAt: serverTimestamp()
+      }, { merge:true });
+    }
+
+    async function reject(reqId, uid){
+      await updateDoc(doc(db,"onboardingRequests", reqId), {
+        status: "rejected",
+        decidedAt: serverTimestamp()
+      });
+      await setDoc(doc(db,"users", uid), {
+        uid,
+        status: "rejected",
+        updatedAt: serverTimestamp()
+      }, { merge:true });
+    }
+
+    $("btnRefresh").addEventListener("click", loadPending);
+    $("btnHome").addEventListener("click", ()=> window.location.href = "/home.html");
+    $("btnSignOut").addEventListener("click", async ()=>{
+      await signOut(auth);
+      window.location.replace("/index.html");
+    });
+
+    $("rows").addEventListener("click", async (ev)=>{
+      const btn = ev.target.closest("button");
+      if (!btn) return;
+      const act = btn.dataset.act;
+      const id  = btn.dataset.id;
+      const uid = btn.dataset.uid;
+      if (!act || !id || !uid) return;
+
+      btn.disabled = true;
+      btn.style.opacity = "0.7";
+
+      try{
+        setStatus(act === "approve" ? "Approving…" : "Rejecting…");
+        if (act === "approve") await approve(id, uid);
+        if (act === "reject") await reject(id, uid);
+        await loadPending();
+        setStatus("Ready.");
+      } catch(e){
+        console.error(e);
+        setStatus("Action failed: " + (e?.message || "Unknown error"));
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = "";
+      }
+    });
+
+    onAuthStateChanged(auth, async (u)=>{
+      if (!u) return window.location.replace("/index.html");
+      const access = await assertAccess(u);
+      if (!access.ok){
+        setStatus("Access denied. You are not Alcom/Admin.");
+        $("rows").innerHTML = `<tr><td colspan="6" class="small">No access.</td></tr>`;
+        return;
+      }
+      setStatus(`Access granted: ${access.isAdmin ? "Admin" : "Alcom"} • ${access.email}`);
+      await loadPending();
+      setStatus("Ready.");
+    });
+  </script>
+</body>
+</html>

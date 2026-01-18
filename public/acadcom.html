@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Acadcom — OPAXI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    /* Page theme (black + green), UI only */
+    body.app-dark { background:#0f172a; color:#f8fafc; font-family:'Inter',sans-serif; }
+
+    .wrap{max-width:960px;margin:16px auto;padding:0 16px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:18px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row > div{flex:1;min-width:260px}
+    .hint{color:#94a3b8}
+    .msg{margin-top:8px}
+    .list{margin-top:10px;border:1px solid #334155;border-radius:12px;overflow:hidden}
+    .item{padding:12px;border-top:1px solid #475569;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+    .item:first-child{border-top:none}
+    .muted{color:#94a3b8;font-size:12px}
+
+    /* Buttons */
+    .btn{background:#22c55e;color:#fff;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;text-align:center}
+    .btn.light{background:#334155;color:#f8fafc;border:1px solid #334155}
+    .btn.red{background:#dc2626}
+    .btn.green{background:#22c55e}
+
+    /* ===== Header polish (compact + right-aligned actions in one row) ===== */
+    .hdr-actions { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; white-space:nowrap; }
+    .btn.icon-only { width:32px; height:32px; padding:0; display:grid; place-items:center; }
+    .btn.icon-only svg { width:15px; height:15px; }
+    #btnSignOut.compact { padding:6px 10px; height:32px; font-size:13px; line-height:1; }
+
+    /* Make the header bar shorter and symmetric on mobile */
+    @media (max-width:520px){
+      #header > * { padding-top:6px !important; padding-bottom:6px !important; }
+      #header .tagline, #header .subtitle, #header .brand-sub { display:none !important; }
+      #header h1, #header .title, #header .brand-title { font-size:18px !important; line-height:1.2 !important; }
+    }
+
+    /* ====== NEW: Logo next to "Acadcom Control" (scoped to this page) ====== */
+    .acadcom-heading{
+      display:flex; align-items:center; gap:10px;
+      margin:0 0 12px;               /* preserve original spacing of h2 */
+      line-height:1.2;
+    }
+    .acadcom-logo{
+      width:28px; height:28px;       /* small, unobtrusive */
+      object-fit:contain; display:inline-block;
+    }
+    @media (max-width:520px){
+      .acadcom-logo{ width:24px; height:24px; }
+    }
+  </style>
+</head>
+
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="card">
+      <!-- h2 now shows the Acadcom logo on the left -->
+      <h2 class="acadcom-heading">
+        <img src="/assets/Acadcom.png" alt="Acadcom" class="acadcom-logo">
+        Acadcom Control
+      </h2>
+
+      <p class="hint">
+        Manage the separate routine links for Juniors (b25*) and Seniors (b24*), set the daily reminder time,
+        the active terms, and subject catalogs.
+      </p>
+
+      <!-- Links -->
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Junior routine (b25*)</label>
+          <input id="juniorUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/...">
+          <div class="row">
+            <button id="btnSaveJuniorUrl" class="btn green">Save</button>
+            <a id="openJunior" class="btn light" href="#" target="_blank" rel="noopener">Open Junior Routine</a>
+          </div>
+        </div>
+
+        <div>
+          <label>Senior routine (b24*)</label>
+          <input id="seniorUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/...">
+          <div class="row">
+            <button id="btnSaveSeniorUrl" class="btn green">Save</button>
+            <a id="openSenior" class="btn light" href="#" target="_blank" rel="noopener">Open Senior Routine</a>
+          </div>
+        </div>
+
+        <div>
+          <label>Daily reminder time</label>
+          <div class="row" style="align-items:center">
+            <input id="reminderTime" placeholder="07:30" style="max-width:120px">
+            <select id="reminderMeridiem" style="max-width:90px">
+              <option>AM</option>
+              <option>PM</option>
+            </select>
+          </div>
+          <button id="btnSaveReminder" class="btn green" style="margin-top:6px">Save</button>
+          <div class="small hint" style="margin-top:4px">
+            Saved as 24-hour time internally (e.g., 07:30 AM → 07:30, 07:30 PM → 19:30).
+          </div>
+        </div>
+      </div>
+
+      <!-- Terms -->
+      <h3 style="margin:18px 0 8px">Terms</h3>
+      <div class="row">
+        <div>
+          <label>Senior term</label>
+          <input id="termSenior" placeholder="e.g., 5">
+          <button id="btnSaveTermSenior" class="btn green" style="margin-top:6px">Save</button>
+        </div>
+        <div>
+          <label>Junior term</label>
+          <input id="termJunior" placeholder="e.g., 1">
+          <button id="btnSaveTermJunior" class="btn green" style="margin-top:6px">Save</button>
+        </div>
+      </div>
+
+      <!-- Subject catalogs -->
+      <h3 style="margin:18px 0 8px">Subject catalogs</h3>
+      <p class="hint">One subject per line. Seniors see this list as checkboxes for the current term.</p>
+      <div class="row">
+        <div>
+          <label>Senior subjects</label>
+          <textarea id="seniorSubjects" placeholder="Subject A&#10;Subject B"></textarea>
+          <button id="btnSaveSeniorSubjects" class="btn green" style="margin-top:6px">Save</button>
+        </div>
+        <div>
+          <label>Junior subjects (optional)</label>
+          <textarea id="juniorSubjects" placeholder="Subject A&#10;Subject B"></textarea>
+          <button id="btnSaveJuniorSubjects" class="btn green" style="margin-top:6px">Save</button>
+        </div>
+      </div>
+
+      <!-- NEW: Resources (Terms 1–6) -->
+      <h3 style="margin:18px 0 8px">Resources (by Term)</h3>
+      <p class="hint">Paste Google links for each term. Students will see a filterable list based on their cohort.</p>
+      <div class="row">
+        <div>
+          <label>Term 1 Resources URL</label>
+          <input id="term1ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label>Term 2 Resources URL</label>
+          <input id="term2ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Term 3 Resources URL</label>
+          <input id="term3ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label>Term 4 Resources URL</label>
+          <input id="term4ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Term 5 Resources URL</label>
+          <input id="term5ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+        <div>
+          <label>Term 6 Resources URL</label>
+          <input id="term6ResourcesUrl" type="url" placeholder="https://drive.google.com/...">
+        </div>
+      </div>
+      <button id="btnSaveResources" class="btn green" style="margin-top:6px">Save Resources</button>
+
+      <div id="saveMsg" class="msg"></div>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #334155">
+      <h3>Current settings</h3>
+      <p id="routineMeta" class="hint">Loading…</p>
+    </div>
+
+    <!-- Change requests -->
+    <div class="card" style="margin-top:16px">
+      <h3>Change requests</h3>
+      <p class="hint">Approve or decline senior profile change requests (max 2 per term per student). Older requests remain for audit.</p>
+
+      <div id="reqList" class="list">
+        <div class="item"><div class="muted">Loading…</div></div>
+      </div>
+
+      <h4 style="margin:18px 0 6px">Reset change counter</h4>
+      <p class="hint">Sets the student's change-request counter back to 0 for the selected term (keeps history intact).</p>
+      <div class="row" style="align-items:center">
+        <input id="resetEmail" type="email" placeholder="student@astra.xlri.ac.in">
+        <input id="resetTerm" type="number" min="1" placeholder="Term e.g., 5" style="max-width:120px">
+        <button id="btnResetCounter" class="btn red">Reset counter</button>
+      </div>
+      <div id="resetMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { AcadcomController } from "/modules/acadcom/AcadcomController.js";
+
+    onAuthStateChanged(auth, (u)=>{
+      const email = u?.email || "";
+
+      // SAME header as Home (no season bar)
+      document.getElementById("header").innerHTML = renderHeader({
+        title: "OPAXI",
+        email,
+        showAdmin: true,
+        showCrisp: true,
+        showAcadcom: true
+      });
+
+      // Build compact Home icon and keep it with Sign out on the RIGHT (one row, no wrap)
+      const btnSignOut = document.getElementById("btnSignOut");
+      if (btnSignOut && !document.getElementById("btnGoHome")) {
+        // shrink Sign out
+        btnSignOut.classList.add('compact');
+
+        // create Home icon
+        const home = document.createElement("a");
+        home.id = "btnGoHome";
+        home.href = "/home.html";
+        home.className = "btn light icon-only";
+        home.title = "Home";
+        home.setAttribute("aria-label", "Home");
+        home.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11l9-7 9 7"></path>
+            <path d="M9 22V12h6v10"></path>
+          </svg>`;
+
+        const rightCluster = btnSignOut.parentElement;
+        rightCluster.classList.add('hdr-actions');
+        rightCluster.style.display = 'flex';
+        rightCluster.style.alignItems = 'center';
+        rightCluster.style.gap = '6px';
+        rightCluster.style.flexWrap = 'nowrap';
+        rightCluster.style.whiteSpace = 'nowrap';
+
+        // [Home][Sign out]
+        rightCluster.insertBefore(home, btnSignOut);
+
+        const headerRoot = document.getElementById("header").firstElementChild;
+        if (headerRoot) headerRoot.style.padding = "6px 10px";
+      }
+
+      attachAuthHandlers();
+      (new AcadcomController({ email })).init();
+    });
+  </script>
+</body>
+</html>

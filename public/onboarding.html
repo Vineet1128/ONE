@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>ONE — Onboarding</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css"/>
+
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#0b1223; --text:#e5e7eb; --muted:#94a3b8;
+      --ring:rgba(59,130,246,.35); --accent:#3b82f6; --accent2:#22d3ee;
+      --border:rgba(148,163,184,.18); --ok:#22c55e; --bad:#ef4444;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .backdrop{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(1100px 520px at -10% -10%, rgba(34,211,238,.16), transparent 55%),
+        radial-gradient(900px 600px at 120% 120%, rgba(59,130,246,.20), transparent 55%);
+      filter:saturate(115%);
+    }
+    .card{
+      width:min(760px, 100%);
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 12px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .brand img{ height:42px; width:auto; border-radius:10px; }
+    .brand h1{ margin:0; font-size:20px; letter-spacing:.2px; }
+    .brand p{ margin:2px 0 0; color:var(--muted); font-size:12px; font-weight:600; }
+    .divider{ height:1px; background:var(--border); margin:14px 0; }
+
+    .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+    @media (min-width:720px){ .grid{ grid-template-columns:1fr 1fr; } }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    label{ font-size:12px; color:var(--muted); font-weight:700; }
+    input,select{
+      padding:12px 12px; border-radius:14px;
+      border:1px solid var(--border); background:#0b1223; color:#fff; outline:none;
+    }
+    input:focus,select:focus{ border-color:var(--ring); box-shadow:0 0 0 3px rgba(59,130,246,.18); }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:10px 14px; border-radius:14px; border:1px solid var(--border);
+      background:#0b1223; color:#fff; font-weight:800; cursor:pointer; text-decoration:none;
+      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .btn:hover{ border-color:var(--ring); box-shadow:0 10px 26px rgba(2,132,199,.22); }
+    .btn:active{ transform:translateY(1px); }
+    .btn.primary{ background:linear-gradient(90deg, rgba(59,130,246,.95), rgba(34,211,238,.85)); border:none; }
+    .btn.ghost{ background:transparent; }
+
+    .status{
+      margin-top:12px; padding:12px 12px;
+      border:1px solid var(--border); border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      color:var(--muted); font-size:13px; line-height:1.4;
+    }
+    .status.ok{ border-color: rgba(34,197,94,.30); }
+    .status.bad{ border-color: rgba(239,68,68,.30); }
+    .mono{ font-family:ui-monospace,Menlo,Consolas,monospace; color:#e2e8f0; }
+    .small{ font-size:12px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <main class="card" aria-label="ONE onboarding">
+    <div class="brand">
+      <img src="/assets/common/logo.png" alt="ONE logo">
+      <div>
+        <h1>Alumni Onboarding</h1>
+        <p>Submit your details for Alcom approval.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <form id="form">
+      <div class="grid">
+        <div class="field" style="grid-column:1/-1">
+          <label for="astraId">Astra ID (mandatory)</label>
+          <input id="astraId" type="email" placeholder="b24408@astra.xlri.ac.in" required>
+        </div>
+
+        <div class="field">
+          <label for="phone">Phone (phone OR personal email required)</label>
+          <input id="phone" type="tel" placeholder="+91XXXXXXXXXX">
+        </div>
+
+        <div class="field">
+          <label for="personalEmail">Personal Email (phone OR personal email required)</label>
+          <input id="personalEmail" type="email" placeholder="name@gmail.com">
+        </div>
+
+        <div class="field">
+          <label for="startYear">Batch start year (optional)</label>
+          <input id="startYear" type="number" min="2000" max="2100" placeholder="2024">
+        </div>
+
+        <div class="field">
+          <label for="campus">Campus (optional)</label>
+          <select id="campus">
+            <option value="">Select</option>
+            <option value="JSR">Jamshedpur</option>
+            <option value="DEL">Delhi-NCR</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="btnSubmit" class="btn primary" type="submit">Submit for approval</button>
+        <a class="btn ghost" href="/index.html">Back</a>
+      </div>
+
+      <div class="small" style="margin-top:8px">
+        Note: approval is required to access Alumni Home.
+      </div>
+    </form>
+
+    <div id="status" class="status">Checking session…</div>
+  </main>
+
+  <script type="module">
+    import { auth, db, doc, setDoc, collection, addDoc, serverTimestamp } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const $ = (id)=>document.getElementById(id);
+    const statusEl = $("status");
+
+    function setStatus(msg, kind=""){
+      statusEl.classList.remove("ok","bad");
+      if (kind) statusEl.classList.add(kind);
+      statusEl.innerHTML = msg;
+    }
+
+    onAuthStateChanged(auth, async (u)=>{
+      if (!u) return window.location.replace("/index.html");
+      if (!u.emailVerified){
+        setStatus("Please verify your email first, then return here.", "bad");
+        return;
+      }
+      setStatus(`Signed in as <span class="mono">${u.email}</span>. Fill the form and submit.`);
+    });
+
+    $("form").addEventListener("submit", async (ev)=>{
+      ev.preventDefault();
+      const u = auth.currentUser;
+      if (!u) return window.location.replace("/index.html");
+      if (!u.emailVerified){ setStatus("Please verify your email first.", "bad"); return; }
+
+      const astraId = ($("astraId").value||"").trim().toLowerCase();
+      const phone = ($("phone").value||"").trim();
+      const personalEmail = ($("personalEmail").value||"").trim().toLowerCase();
+      const startYearRaw = ($("startYear").value||"").trim();
+      const startYear = startYearRaw ? parseInt(startYearRaw,10) : null;
+      const campus = $("campus").value || "";
+
+      if (!astraId){ setStatus("Astra ID is mandatory.", "bad"); return; }
+      if (!phone && !personalEmail){ setStatus("Provide at least one: Phone or Personal Email.", "bad"); return; }
+
+      const btn = $("btnSubmit");
+      btn.disabled = true; btn.style.opacity = "0.7";
+
+      try{
+        // Mark user as pending (identity doc)
+        await setDoc(doc(db,"users",u.uid),{
+          uid: u.uid,
+          primaryEmail: u.email || "",
+          emailVerified: true,
+          status: "pending",
+          personaRequested: "alumni",
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp()
+        },{ merge:true });
+
+        // Create onboarding request
+        await addDoc(collection(db,"onboardingRequests"),{
+          uid: u.uid,
+          email: u.email || "",
+          astraId,
+          phone: phone || null,
+          personalEmail: personalEmail || null,
+          startYear: Number.isFinite(startYear) ? startYear : null,
+          campus: campus || null,
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+
+        window.location.replace("/pending.html");
+      } catch(e){
+        console.error(e);
+        setStatus(`Submit failed: ${e?.message || "Unknown error"}`, "bad");
+      } finally {
+        btn.disabled = false; btn.style.opacity = "";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>ONE — Home</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css"/>
+
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#0b1223; --text:#e5e7eb; --muted:#94a3b8;
+      --ring:rgba(59,130,246,.35); --accent:#3b82f6; --accent2:#22d3ee;
+      --border:rgba(148,163,184,.18); --ok:#22c55e;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .backdrop{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(1100px 520px at -10% -10%, rgba(34,211,238,.16), transparent 55%),
+        radial-gradient(900px 600px at 120% 120%, rgba(59,130,246,.20), transparent 55%);
+      filter:saturate(115%);
+    }
+
+    #header{ position:sticky; top:0; z-index:30; }
+    .opx-header{
+      display:grid; grid-template-columns:auto 1fr auto; align-items:center;
+      gap:12px; padding:12px 16px;
+      background:rgba(15,23,42,.72); backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .opx-left{ display:flex; align-items:center; }
+    .brand-logo{ height:28px; width:auto; display:block; border-radius:6px; }
+
+    .opx-center{ text-align:center; line-height:1.05; }
+    .opx-title{ margin:0; font-size:16px; font-weight:700; letter-spacing:.3px; }
+    .opx-sub{ margin:2px 0 0; font-size:10px; color:var(--muted); font-weight:500; }
+
+    .opx-right{ display:flex; align-items:center; }
+    #btnSignOut{
+      border:1px solid var(--border); background:#0b1223; color:#fff;
+      padding:8px 12px; border-radius:12px; font-weight:600;
+      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    #btnSignOut:hover{ border-color:var(--ring); box-shadow:0 8px 24px rgba(2,132,199,.22); }
+    #btnSignOut:active{ transform:translateY(1px); }
+
+    .seasonbar{
+      display:none; padding:10px 16px; font-size:13px; color:#dbeafe;
+      background:linear-gradient(90deg, rgba(59,130,246,.18), rgba(34,211,238,.18));
+      border-bottom:1px solid var(--border);
+    }
+    .seasonbar.reverse{ background:linear-gradient(90deg, rgba(34,211,238,.18), rgba(59,130,246,.18)); }
+
+    .home-wrap{ max-width:940px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
+    .welcome{ font-size:22px; font-weight:700; letter-spacing:.2px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .welcome::before{ content:""; width:10px; height:10px; border-radius:999px; background:var(--ok); box-shadow:0 0 0 4px rgba(34,197,94,.15); }
+    .pill-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      padding:12px 16px; border-radius:14px; border:1px solid var(--border);
+      background:#0b1223; color:#fff; font-weight:600; text-decoration:none; cursor:pointer;
+      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .btn:hover{ border-color:var(--ring); box-shadow:0 10px 26px rgba(2,132,199,.22); }
+    .btn:active{ transform:translateY(1px); }
+    .btn.light{ background:#0b1223; color:#e6edf6; border:1px solid var(--border); }
+    .cta-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+    @media (min-width:720px){ .cta-grid{ grid-template-columns:1fr 1fr; } }
+    .cta-card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:18px; padding:16px;
+      box-shadow:0 8px 26px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .cta-card h3{ margin:0 0 6px; font-size:18px; }
+    .cta-card p{ margin:0 0 12px; color:var(--muted); }
+    .cta-card .btn{ width:auto; padding:10px 14px; border-radius:12px; }
+    .note-stub{ margin-top:6px; padding:14px 16px; border:1px solid var(--border);
+      border-radius:16px; background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)); color:var(--muted);
+    }
+    .small{ font-size:13px; color:var(--muted); }
+
+    .btn.is-disabled{
+      opacity:.5;
+      pointer-events:none;
+      cursor:not-allowed;
+      filter:grayscale(35%);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="backdrop"></div>
+
+  <div id="header"></div>
+  <div id="seasonTopBar" class="seasonbar"></div>
+
+  <div class="home-wrap">
+    <div id="welcome" class="welcome">Welcome</div>
+
+    <div class="pill-row">
+      <button id="btnAdminView"   class="btn light" style="display:none">Admin</button>
+      <button id="btnCrispView"   class="btn light" style="display:none">CRISP</button>
+      <button id="btnAcadcomView" class="btn light" style="display:none">Acadcom</button>
+
+      <!-- ✅ NEW: ALCOM -->
+      <button id="btnAlcomView"   class="btn light" style="display:none">Alcom</button>
+    </div>
+
+    <div class="cta-grid">
+      <div class="cta-card" id="cardAcademics">
+        <h3>Academics</h3>
+        <p>Routine, subjects, and attendance.</p>
+        <a id="btnAcademics" class="btn" href="/academics.html">Go to Academics</a>
+        <div id="acadHint" class="small" style="margin-top:6px"></div>
+      </div>
+
+      <div class="cta-card" id="cardPreparation">
+        <h3>Preparation</h3>
+        <p>Mentoring sessions, slots, and bookings.</p>
+        <a id="btnPreparation" class="btn" href="#">Open Preparation</a>
+        <div id="prepHint" class="small" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="note-stub">
+      <strong>Notifications</strong><br>
+      <span class="small">You’ll see booking updates and reminders here.</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth, db, doc, getDoc, onSnapshot } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const isSeniorEmail = (e)=> /^b24.*@astra\.xlri\.ac\.in$/i.test(e||"");
+    const isJuniorEmail = (e)=> /^b25.*@astra\.xlri\.ac\.in$/i.test(e||"");
+
+    const renderHomeHeader = ()=>`
+      <div class="opx-header" role="banner" aria-label="ONE">
+        <div class="opx-left">
+          <img class="brand-logo" src="/assets/logo.png" alt="Prometheus logo">
+        </div>
+        <div class="opx-center">
+          <div class="opx-title">ONE</div>
+          <div class="opx-sub">Built by Students of XLRI</div>
+        </div>
+        <div class="opx-right">
+          <button id="btnSignOut">Sign out</button>
+        </div>
+      </div>
+    `;
+
+    const $ = (id)=> document.getElementById(id);
+
+    function firstNameFrom(user){
+      const dn = user?.displayName || "";
+      if (dn) return dn.split(" ")[0];
+      const email = user?.email || "";
+      return email ? email.split("@")[0] : "there";
+    }
+
+    function emailHandle(email){
+      return (email || "").split("@")[0] || "";
+    }
+
+    let __prepDisabled = false;
+    let __acadDisabled = false;
+
+    function setPrepLink({ email, reverse }) {
+      const btn  = $("btnPreparation");
+      const hint = $("prepHint");
+      if (!btn) return;
+
+      if (__prepDisabled) return;
+
+      const senior = isSeniorEmail(email);
+      const junior = isJuniorEmail(email);
+      let href = senior ? "/senior.html" : (junior ? "/junior.html" : "#");
+      let msg  = senior ? "You are recognized as Senior (b24*)."
+                        : (junior ? "You are recognized as Junior (b25*)."
+                                  : "Your cohort could not be inferred from email.");
+      if (reverse) {
+        href = senior ? "/junior.html" : (junior ? "/senior.html" : "#");
+        if (senior) msg = "Roles reversed: Senior accessing Junior prep.";
+        else if (junior) msg = "Roles reversed: Junior providing Senior-style prep.";
+      }
+      if (href === "#") btn.removeAttribute("href"); else btn.href = href;
+      if (hint) hint.textContent = msg;
+    }
+
+    function setSeasonBar({ seasonName, reverse }) {
+      const bar = $("seasonTopBar");
+      if (!bar) return;
+      if (!reverse && !seasonName) { bar.style.display = "none"; bar.textContent=""; bar.classList.remove("reverse"); return; }
+      const parts = [];
+      if (seasonName) parts.push(`Season: ${seasonName}`);
+      if (reverse) parts.push("Roles reversed");
+      bar.textContent = parts.join(" — ");
+      bar.classList.toggle("reverse", !!reverse);
+      bar.style.display = "block";
+    }
+
+    function applyHomeButtonFlags({ showAcademics=true, showPreparation=true }){
+      const btnA = $("btnAcademics");
+      const btnP = $("btnPreparation");
+      const acadHint = $("acadHint");
+      const prepHint = $("prepHint");
+
+      __acadDisabled = !showAcademics;
+      if (btnA){
+        if (showAcademics){
+          btnA.classList.remove("is-disabled");
+          btnA.removeAttribute("aria-disabled");
+          if (!btnA.getAttribute("href")) btnA.href = "/academics.html";
+          if (acadHint) acadHint.textContent = "";
+        } else {
+          btnA.classList.add("is-disabled");
+          btnA.setAttribute("aria-disabled","true");
+          btnA.removeAttribute("href");
+          if (acadHint) acadHint.textContent = "Coming soon!";
+        }
+      }
+
+      __prepDisabled = !showPreparation;
+      if (btnP){
+        if (showPreparation){
+          btnP.classList.remove("is-disabled");
+          btnP.removeAttribute("aria-disabled");
+          if (prepHint) prepHint.textContent = "";
+        } else {
+          btnP.classList.add("is-disabled");
+          btnP.setAttribute("aria-disabled","true");
+          btnP.removeAttribute("href");
+          if (prepHint) prepHint.textContent = "Coming soon!";
+        }
+      }
+    }
+
+    // ✅ NEW: fetch roles (lowercase first, then exact) — matches your rules pattern
+    async function getRolesByEmail(email){
+      const exact = (email || "").trim();
+      const lower = exact.toLowerCase();
+      try{
+        const s1 = await getDoc(doc(db, "roles", lower));
+        if (s1.exists()) return s1.data() || {};
+        const s2 = await getDoc(doc(db, "roles", exact));
+        if (s2.exists()) return s2.data() || {};
+      } catch(e){
+        console.warn("Roles lookup failed:", e);
+      }
+      return {};
+    }
+
+    onAuthStateChanged(auth, async (u)=>{
+      const email = (u?.email || "");
+      $("header").innerHTML = renderHomeHeader();
+      attachAuthHandlers();
+
+      const name = firstNameFrom(u);
+      const handle = emailHandle(email);
+      $("welcome").textContent = handle ? `Welcome, ${name} (${handle})` : `Welcome, ${name}`;
+
+      // ✅ NEW: show role pills (Admin/CRISP/Acadcom/Alcom) — UI only, doesn’t affect existing flows
+      const roles = await getRolesByEmail(email);
+
+      const btnAdmin   = $("btnAdminView");
+      const btnCrisp   = $("btnCrispView");
+      const btnAcadcom = $("btnAcadcomView");
+      const btnAlcom   = $("btnAlcomView");
+
+      const isAdmin = !!roles.admin || !!roles.isAdmin || (email === "b24408@astra.xlri.ac.in");
+      if (btnAdmin){
+        btnAdmin.style.display = isAdmin ? "inline-flex" : "none";
+        if (isAdmin) btnAdmin.onclick = ()=> window.location.href = "/admin.html";
+      }
+
+      const isCrisp = !!roles.isCrisp;
+      if (btnCrisp){
+        btnCrisp.style.display = isCrisp ? "inline-flex" : "none";
+        if (isCrisp) btnCrisp.onclick = ()=> window.location.href = "/crisp.html";
+      }
+
+      const isAcadcom = !!roles.acadcom;
+      if (btnAcadcom){
+        btnAcadcom.style.display = isAcadcom ? "inline-flex" : "none";
+        if (isAcadcom) btnAcadcom.onclick = ()=> window.location.href = "/acadcom.html";
+      }
+
+      // ✅ NEW: ALCOM
+      const isAlcom = !!roles.alcom;
+      if (btnAlcom){
+        btnAlcom.style.display = isAlcom ? "inline-flex" : "none";
+        if (isAlcom) btnAlcom.onclick = ()=> window.location.href = "/alcom.html";
+      }
+
+      setPrepLink({ email, reverse:false });
+
+      let lastFlags = { showAcademics:true, showPreparation:true };
+
+      try {
+        const ref = doc(db, "settings", "app");
+        const snap = await getDoc(ref);
+        const d = snap.exists() ? (snap.data()||{}) : {};
+        const reverse = !!d.reverseRoles;
+        const seasonName = d.seasonName || "";
+        setSeasonBar({ seasonName, reverse });
+
+        lastFlags = {
+          showAcademics:   d.homeShowAcademics   !== false,
+          showPreparation: d.homeShowPreparation !== false
+        };
+        applyHomeButtonFlags(lastFlags);
+        setPrepLink({ email, reverse });
+
+        onSnapshot(ref, (s)=>{
+          const dd = s.exists() ? (s.data()||{}) : {};
+          const rev = !!dd.reverseRoles;
+          setSeasonBar({ seasonName:(dd.seasonName||""), reverse:rev });
+
+          const flags = {
+            showAcademics:   dd.homeShowAcademics   !== false,
+            showPreparation: dd.homeShowPreparation !== false
+          };
+          if (flags.showAcademics !== lastFlags.showAcademics ||
+              flags.showPreparation !== lastFlags.showPreparation){
+            lastFlags = flags;
+            applyHomeButtonFlags(flags);
+          }
+          setPrepLink({ email, reverse:rev });
+        });
+      } catch (e) {
+        console.warn("Season/settings read failed; using defaults.", e);
+        setSeasonBar({ seasonName:"", reverse:false });
+        applyHomeButtonFlags(lastFlags);
+        setPrepLink({ email, reverse:false });
+      }
+
+      try {
+        const mod = await import("/modules/home/AttendanceWidget.js");
+        new mod.AttendanceWidget().init();
+      } catch (e) {
+        console.warn("Attendance widget not loaded (skipping):", e);
+      }
+    });
+  </script>
+</body>
+</html>
