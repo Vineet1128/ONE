@@ -146,7 +146,7 @@
   </main>
 
   <script type="module">
-    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.8";
+    import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.3";
     import {
       onAuthStateChanged,
       GoogleAuthProvider,
@@ -189,18 +189,33 @@
     const ROLLOVER_MONTH = 3;   // March
     const ROLLOVER_DAY   = 15;  // 15th
     const PROGRAM_YEARS_DEFAULT = 2;
-    const studentMatch = (email)=> /^b(\d{2}).*@astra\.xlri\.ac\.in$/i.exec(email||"");
+    const studentMatch = (email)=> /^b(\\d{2}).*@astra\\.xlri\\.ac\\.in$/i.exec(email||"");
     const lcEmail = (e)=> (e||"").toLowerCase();
 
     function show(el, on=true){ if(!el) return; el.classList.toggle("hide", !on); }
     function setStatus(msg, kind=""){ statusEl.classList.remove("ok","bad"); if(kind) statusEl.classList.add(kind); statusEl.innerHTML = msg; }
-    function setMode(mode, emailValue=""){
+    function setMode(mode, emailValue="") {
       show(formIdentity, mode==="identity");
       show(formLogin,    mode==="login");
       show(formSignup,   mode==="signup");
-      if (mode==="login"){ loginEmail.value = emailValue; loginPass.value=""; setStatus("Enter your password to continue."); }
-      if (mode==="signup"){ signupEmail.value = emailValue; signupPass.value=""; setStatus("Create your ONE account. We will send a verification link."); }
-      if (mode==="identity"){ setStatus("Enter your email to continue."); }
+      if (mode === "login") {
+        loginEmail.value = emailValue;
+        loginPass.value = "";
+        // Reset state
+        show(btnResend, false);
+        show(btnOut, true);
+        setStatus("Enter your password to continue.");
+      }
+      if (mode === "signup") {
+        signupEmail.value = emailValue;
+        signupPass.value = "";
+        setStatus("Create your ONE account. We will send a verification link.");
+      }
+      if (mode === "identity") {
+        idEmail.value = "";
+        setStatus("Enter your email to continue.");
+        show(btnOut, false);
+      }
     }
 
     function friendly(code){
@@ -304,11 +319,10 @@
           applicationServerKey: applicationServerKey
         });
 
-        // Save the subscription to Firestore, creating/merging the doc as needed.
         const userDocRef = doc(db, "users", user.uid);
         await setDoc(userDocRef, {
             pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription)))
-        }, { merge: true }); // Using setDoc with merge to avoid race condition
+        }, { merge: true });
 
       } catch (error) {
         console.error("Failed to subscribe to push notifications:", error);
@@ -323,32 +337,39 @@
           });
       });
     }
-    
-    // ---------- Handle Google Redirect Result ----------
+
+    // ---------- Handle Google Redirect Result (fires on page load after redirect) ----------
     getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // This is the signed-in user
-          const user = result.user;
-          // You can access the result token via:
-          // const credential = GoogleAuthProvider.credentialFromResult(result);
-          // const token = credential.accessToken;
-          setStatus(`Signed in as <span class="mono">${user.email}</span>. Routing…`, "ok");
-          routeUser(user);
-        }
-      }).catch((error) => {
-        // Handle Errors here.
+      .catch((error) => {
+        // Handle Errors here. This is triggered only if there's an error during the redirect.
+        // The success case is handled by onAuthStateChanged.
         const errorCode = error.code;
         const errorMessage = error.message;
-        // The email of the user's account used.
-        const email = error.customData.email;
-        // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
         setStatus(friendly(errorCode) || (errorMessage || "Google sign-in failed."), "bad");
       });
 
+    // ---------- Central Session listener (the single source of truth) ----------
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await reload(user); // Make sure we have the latest user state (e.g., emailVerified)
+        if (user.emailVerified) {
+          setStatus(`Signed in as <span class="mono">${user.email}</span>. Routing…`, "ok");
+          show(btnOut, true);
+          routeUser(user);
+        } else {
+          // User is signed in but email is not verified.
+          // This can happen after signup or if they log in without ever verifying.
+          setMode("login", user.email);
+          setStatus(`Email not verified for <span class="mono">${user.email}</span>.`, "bad");
+          show(btnResend, true);
+        }
+      } else {
+        // No user is signed in.
+        setMode("identity");
+      }
+    });
+
     // ---------- Identity-first flow ----------
-    setMode("identity");
     formIdentity.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (idEmail.value||"").trim();
@@ -369,11 +390,11 @@
       }
     });
 
-    btnGoogle.addEventListener("click", async ()=>{
+    btnGoogle.addEventListener("click", async ()=> {
       const provider = new GoogleAuthProvider();
       try {
         await signInWithRedirect(auth, provider);
-        // The getRedirectResult handler will take over from here.
+        // The onAuthStateChanged observer will handle the successful sign-in.
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Google sign-in failed."), "bad");
       }
@@ -386,14 +407,8 @@
       const pass  = (loginPass.value||"");
       btnDoLogin.disabled = true; btnDoLogin.style.opacity="0.7";
       try{
-        const cred = await signInWithEmailAndPassword(auth, email, pass);
-        await reload(cred.user);
-        if (!cred.user.emailVerified){
-          setStatus(`Email not verified for <span class="mono">${email}</span>.`, "bad");
-          show(btnResend,true); show(btnOut,true); return;
-        }
-        setStatus(`Signed in as <span class="mono">${email}</span>. Routing…`, "ok");
-        await routeUser(cred.user);
+        // onAuthStateChanged will handle the success case
+        await signInWithEmailAndPassword(auth, email, pass);
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Login failed."), "bad");
       } finally{
@@ -409,9 +424,9 @@
       try{
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await sendEmailVerification(cred.user);
-        setStatus(`Account created for <span class="mono">${email}</span>. Verify your email, then return here to login.`, "ok");
-        show(btnResend,true); show(btnOut,true);
-        setMode("login", email);
+        // onAuthStateChanged will see the new user, but emailVerified will be false.
+        // It will then show the correct "verify your email" message.
+        setMode("login", email); // Switch to login mode
       } catch(err){
         if (err?.code === "auth/email-already-in-use"){
           setMode("login", email);
@@ -424,8 +439,10 @@
       }
     });
 
+    // ---------- Helper buttons ----------
     btnBackId.addEventListener("click", ()=> setMode("identity"));
-    btnForgot.addEventListener("click", async ()=>{
+
+    btnForgot.addEventListener("click", async ()=> {
       const email = (loginEmail.value||"").trim();
       if (!email){ setStatus("Enter your email above, then click ‘Forgot password?’", "bad"); return; }
       try{
@@ -435,36 +452,20 @@
         setStatus(friendly(err?.code) || (err?.message || "Could not send reset email."), "bad");
       }
     });
-    btnResend.addEventListener("click", async ()=>{
+
+    btnResend.addEventListener("click", async ()=> {
       const u = auth.currentUser; if (!u) return;
-      try{ await sendEmailVerification(u); setStatus(`Verification email sent again to <span class="mono">${u.email}</span>.`, "ok"); }
-      catch(err){ setStatus(`Could not resend verification email. ${err?.message||""}`, "bad"); }
-    });
-    btnOut.addEventListener("click", async ()=>{
-      await signOut(auth); setMode("identity"); setStatus("Signed out.");
-      show(btnResend,false); show(btnOut,false);
+      try{
+        await sendEmailVerification(u);
+        setStatus(`Verification email sent again to <span class="mono">${u.email}</span>.`, "ok");
+      } catch(err){
+        setStatus(`Could not resend verification email. ${err?.message||""}`, "bad");
+      }
     });
 
-    // ---------- Session listener ----------
-    onAuthStateChanged(auth, async (u)=>{
-      if (!u){ setMode("identity"); show(btnResend,false); show(btnOut,false); setStatus("Enter your email to continue."); return; }
-      show(btnOut,true);
-      try{
-        await reload(u);
-        if (!u.emailVerified){
-          setStatus(`Signed in as <span class="mono">${u.email}</span>. Please verify your email to continue.`, "bad");
-          show(btnResend,true);
-          return;
-        }
-        // Don't re-route if we are coming back from a redirect, getRedirectResult will handle it
-        const result = await getRedirectResult(auth);
-        if(result) return;
-        
-        setStatus(`Signed in as <span class="mono">${u.email}</span>. Routing…`, "ok");
-        await routeUser(u);
-      } catch(err){
-        setStatus(`Session check failed. ${err?.message || ""}`, "bad");
-      }
+    btnOut.addEventListener("click", async ()=> {
+      await signOut(auth);
+      // onAuthStateChanged will handle UI changes
     });
   </script>
 </body>
