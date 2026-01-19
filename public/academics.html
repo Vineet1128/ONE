@@ -42,26 +42,31 @@
     </div>
 
     <!-- Profile -->
-    <div class="card">
-      <div class="row" style="align-items:center;gap:10px;margin-bottom:10px">
-        <span class="badge" id="profileRole">—</span>
-        <span class="small">Term: <strong id="profileTerm">—</strong></span>
+    <div class="card" id="profileCard">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <div class="row" style="align-items:center;gap:10px;margin-bottom:10px">
+              <span class="badge" id="profileRole">—</span>
+              <span class="small">Term: <strong id="profileTerm">—</strong></span>
+          </div>
+          <button id="toggleProfile" class="btn light">Expand</button>
+        </div>
+  
+        <div id="profileContent" style="display:none;">
+            <label>Section</label>
+            <select id="profileSection">
+              <option value="">Select…</option>
+            </select>
+  
+            <div id="subjectChecklist" style="margin-top:12px"></div>
+  
+            <div class="row" style="margin-top:12px">
+              <button id="btnSaveProfile" class="btn">Save settings</button>
+              <span id="profileMsg" class="msg"></span>
+            </div>
+  
+            <div id="profileHelp" class="sticky" style="margin-top:12px">Select and save your Section above to see your classes.</div>
+        </div>
       </div>
-
-      <label>Section</label>
-      <select id="profileSection">
-        <option value="">Select…</option>
-      </select>
-
-      <div id="subjectChecklist" style="margin-top:12px"></div>
-
-      <div class="row" style="margin-top:12px">
-        <button id="btnSaveProfile" class="btn">Save settings</button>
-        <span id="profileMsg" class="msg"></span>
-      </div>
-
-      <div id="profileHelp" class="sticky" style="margin-top:12px">Select and save your Section above to see your classes.</div>
-    </div>
 
     <!-- Exams block -->
     <section id="allExamsWrap"></section>
@@ -136,6 +141,19 @@
       ];
 
       try { await Promise.all(tasks); } catch (_) {}
+    });
+
+    const toggleButton = document.getElementById('toggleProfile');
+    const profileContent = document.getElementById('profileContent');
+
+    toggleButton.addEventListener('click', () => {
+    if (profileContent.style.display === 'none') {
+        profileContent.style.display = 'block';
+        toggleButton.textContent = 'Collapse';
+    } else {
+        profileContent.style.display = 'none';
+        toggleButton.textContent = 'Expand';
+    }
     });
   </script>
 </body>
