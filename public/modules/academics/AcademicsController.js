@@ -324,11 +324,11 @@ export class AcademicsController {
     const legendHtml = `
       <div class="small" style="color:#64748b; display:flex; gap:8px; align-items:center; margin:4px 0 6px">
         <span class="chip class">Class</span>
-        <span class="chip exam">Exam</span>
+        <span class="chip exam">Exam/Event</span>
       </div>`;
 
     const renderItem = (x)=> {
-      const chip = x.type === "exam" ? `<span class="chip exam">Exam</span>` : `<span class="chip class">Class</span>`;
+      const chip = x.type === "exam" ? `<span class="chip exam">Exam/Event</span>` : `<span class="chip class">Class</span>`;
       return `<li style="margin:6px 0">
         ${x.time?`<span class="small" style="opacity:.8">${x.time}</span> — `:""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${chip}
       </li>`;
@@ -374,7 +374,7 @@ export class AcademicsController {
       return;
     }
 
-    const rows = csv.split(/\r?\n/).map(line => line.split(","));
+    const rows = csv.split(/\\r?\\n/).map(line => line.split(","));
     if (!rows.length){
       wrap.innerHTML = `<div class="hint">Routine was empty.</div>`;
       this.renderAllExams(); // clear Exams block (no data)
@@ -389,7 +389,7 @@ export class AcademicsController {
     const legendHtml = `
       <div class="small" style="color:#64748b; display:flex; gap:8px; align-items:center; margin:4px 0 6px">
         <span class="chip class">Class</span>
-        <span class="chip exam">Exam</span>
+        <span class="chip exam">Exam/Event</span>
       </div>`;
 
     /* ---------- SHARED SENIOR PARSER ---------- */
@@ -417,7 +417,7 @@ export class AcademicsController {
         return `<div class="card"><strong>${label}</strong>
           ${legendHtml}
           <ul style="margin:8px 0 0 16px;padding:0">
-            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
+            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam/Event</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
           </ul></div>`;
       };
       wrap.innerHTML = renderDay(yday,"Yesterday") + renderDay(today,"Today") + renderDay(tmw,"Tomorrow");
@@ -440,6 +440,16 @@ export class AcademicsController {
     }
 
     if (didJuniorParse) {
+      // DYNAMICALLY EXTRACT JUNIOR SUBJECTS
+      const allSubjects = new Set();
+      for (const date in this.byDate) {
+        for (const entry of this.byDate[date]) {
+          allSubjects.add(entry.subject);
+        }
+      }
+      this.state.settings.juniorSubjects = [...allSubjects].sort();
+      this.renderProfile(); // Re-render the profile to show the updated subjects
+
       for (const [k, arr] of Object.entries(this.byDate)) {
         if (buckets[k]) buckets[k].push(...arr);
       }
@@ -451,7 +461,7 @@ export class AcademicsController {
         return `<div class="card"><strong>${label}</strong>
           ${legendHtml}
           <ul style="margin:8px 0 0 16px;padding:0">
-            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
+            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam/Event</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
           </ul></div>`;
       };
       wrap.innerHTML = renderDay(yday,"Yesterday") + renderDay(today,"Today") + renderDay(tmw,"Tomorrow");
@@ -525,7 +535,7 @@ export class AcademicsController {
         return `<div class="card"><strong>${label}</strong>
           ${legendHtml}
           <ul style="margin:8px 0 0 16px;padding:0">
-            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
+            ${list.map(x=>`<li style="margin:6px 0">${x.time?x.time+" — ":""}<b>${x.subject}</b>${x.room?` (${x.room})`:""} ${x.type==="exam"?'<span class="chip exam">Exam/Event</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
           </ul></div>`;
       };
 
@@ -625,7 +635,7 @@ export class AcademicsController {
       return `<div class="card"><strong>${label}</strong>
         ${legendHtml}
         <ul style="margin:8px 0 0 16px;padding:0">
-          ${list.map(x=>`<li style="margin:6px 0"><span class="small" style="opacity:.8">${x.time}</span> — <b>${x.subject}</b> ${x.type==="exam"?'<span class="chip exam">Exam</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
+          ${list.map(x=>`<li style="margin:6px 0"><span class="small" style="opacity:.8">${x.time}</span> — <b>${x.subject}</b> ${x.type==="exam"?'<span class="chip exam">Exam/Event</span>':'<span class="chip class">Class</span>'}</li>`).join("")}
         </ul></div>`;
     };
 
@@ -659,8 +669,8 @@ export class AcademicsController {
     if (!exams.length){
       host.innerHTML = `
         <div class="card">
-          <h3 style="margin:0 0 6px">Exams</h3>
-          <div class="small hint">No exams found.</div>
+          <h3 style="margin:0 0 6px">Exams and Events</h3>
+          <div class="small hint">No exams or events found.</div>
         </div>`;
       return;
     }
@@ -669,7 +679,7 @@ export class AcademicsController {
       const rows = list.map(x=> `
         <li style="margin:6px 0">
           ${x.time ? `<span class="small" style="opacity:.8">${x.time}</span> — ` : ""}
-          <b>${x.subject}</b>${x.room ? ` (${x.room})` : ""} <span class="chip exam">Exam</span>
+          <b>${x.subject}</b>${x.room ? ` (${x.room})` : ""} <span class="chip exam">Exam/Event</span>
         </li>`).join("");
       return `
         <div class="date-group" style="margin-top:8px">
@@ -681,8 +691,9 @@ export class AcademicsController {
     const blocks = Object.keys(byD).map(d => renderDateBlock(d, byD[d])).join("");
     host.innerHTML = `
       <div class="card">
-        <h3 style="margin:0 0 6px">Exams</h3>
+        <h3 style="margin:0 0 6px">Exams and Events</h3>
         ${blocks}
       </div>`;
   }
 }
+
