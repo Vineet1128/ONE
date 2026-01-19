@@ -128,7 +128,7 @@ export const RoutineParsers = (() => {
     // Unwrap extra parens that are NOT just section tags like (E) or (E,F&G)
     // Example: "(OMCR Guest Session)" -> "OMCR Guest Session"
     text = text.replace(
-      /(?!\s*[EFG](?:\s*[,&/]\s*[EFG])*\s*)([^()]*)\)/gi,
+      /\((?!\s*[EFG](?:\s*[,&/]\s*[EFG])*\s*\))([^()]*)\)/gi,
       (_, inner) => inner.trim()
     );
 
@@ -142,7 +142,7 @@ export const RoutineParsers = (() => {
 
       // Capture and remove inline combined section tag to reuse after subject normalization
       let sects = [];
-      const sectMatch = p.match(/([EFG](?:\s*[,&/]\s*[EFG])*)/i);
+      const sectMatch = p.match(/\(([EFG](?:\s*[,&/]\s*[EFG])*) slicing/i);
       if (sectMatch){
         sects = sectMatch[1].replace(/\s+/g,"").split(/[,&/]+/).map(s=>s.trim().toUpperCase()).filter(Boolean);
         p = p.replace(sectMatch[0], "").trim();
@@ -173,7 +173,7 @@ export const RoutineParsers = (() => {
       const subj = normalizeGuestSubject(
         normalizeSubjectToken(
           p
-            .replace(/\s*?\b(?:LCR|MCR)\s*0?\d+?\s*$/i, "")
+            .replace(/\s*\(?\b(?:LCR|MCR)\s*0?\d+\)?\s*$/i, "")
             .replace(/\s+prof(?:essor)?\..*$/i,"")
             .replace(/\s+dr\..*$/i,"")
             .trim()
@@ -185,6 +185,44 @@ export const RoutineParsers = (() => {
     }
     return out;
   }
+  
+    function extractJuniorEntries(cell) {
+    const out = [];
+    if (!cell) return out;
+
+    const text = String(cell).trim();
+    if (!text) return out;
+
+    // Special Event Format: Act [] [Session][Section] [Event Name]
+    if (text.startsWith("Act")) {
+        const match = text.match(/Act\s*\[\]\s*\[(\d+)\]\[([A-Z])\]\s*\[(.*)\]/);
+        if (match) {
+            const [, session, section, eventName] = match;
+            out.push({
+                subj: eventName.trim(),
+                sect: section,
+                type: "exam", // Treat special events as exams
+            });
+        }
+        return out;
+    }
+
+    // Standard Format: Subject [Room] [Professor] [Session][Section]
+    const match = text.match(/(\w+)\s*\[([^\]]+)\]\s*\[([^\]]+)\]\s*\[(\d+)\]\[([A-Z])\]/);
+    if (match) {
+        const [, subject, room, professor, session, section] = match;
+        out.push({
+            subj: subject.trim(),
+            room: room.trim(),
+            prof: professor.trim(),
+            sect: section,
+            type: classifyType(subject),
+        });
+    }
+
+    return out;
+}
+
 
   // Normalize "Guest Session" tokens into the base subject when present
   function normalizeGuestSubject(token){
@@ -210,9 +248,9 @@ export const RoutineParsers = (() => {
     const isRoman = (s) => /^[IVXLCDM]+$/i.test(s || "");
 
     // 1) Strip trailing initials in parentheses: "ERP (AG)" / "MI4E (DB)" → base
-    let m = t.match(/\s*([A-Z]{2,4})\s*$/);
+    let m = t.match(/\s*\(([A-Z]{2,4})\)\s*$/);
     if (m && !isRoman(m[1])) {
-      t = t.replace(/\s*([A-Z]{2,4})\s*$/,"");
+      t = t.replace(/\s*\(([A-Z]{2,4})\)\s*$/,"");
       t = t.trim();
     }
 
@@ -408,9 +446,9 @@ export const RoutineParsers = (() => {
 
           vCarry[col] = cell;
 
-          const entries = extractEntries(cell);
+          const entries = extractJuniorEntries(cell);
 
-          for (const {subj, sect} of entries){
+          for (const {subj, sect, room, type} of entries){
             // Section filter: allow combined E/F/G in any joiner style
             if (sect){
               const parts = String(sect).toUpperCase().replace(/\s+/g,"").split(/[,/&]+/).filter(Boolean);
@@ -423,7 +461,7 @@ export const RoutineParsers = (() => {
             if (bucket.has(kSig)) continue;
             bucket.add(kSig);
 
-            const item = { time: label, subject: subj, room: "", day: "", type: classifyType(subj) };
+            const item = { time: label, subject: subj, room: room, day: "", type: type };
             (byDate[currentDateKey] ||= []).push(item);
           }
         }
