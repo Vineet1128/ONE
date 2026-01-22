@@ -6,66 +6,204 @@
   <title>ONE — Home</title>
 
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/assets/common/logo.png">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#101828">
+
+  <!-- iOS PWA support -->
+  <link rel="apple-touch-icon" href="/assets/brand/one/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/styles.css"/>
 
   <style>
     :root{
-      --bg:#0f172a; --panel:#0b1223; --text:#e5e7eb; --muted:#94a3b8;
-      --ring:rgba(59,130,246,.35); --accent:#3b82f6; --accent2:#22d3ee;
-      --border:rgba(148,163,184,.18); --ok:#22c55e;
+      --bg:#101828;
+      --panel:#0b1223;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --border:rgba(148,163,184,.18);
+
+      --one-green:#B0D030;
+      --one-blue:#0050A0;
+
+      --ring:rgba(176,208,48,.28);
+      --ok:#22c55e;
+      --danger:#ef4444;
     }
+
     html,body{height:100%}
     body{
-      margin:0; background:var(--bg); color:var(--text);
+      margin:0;
+      min-height:100dvh;
+      background:var(--bg);
+      color:var(--text);
       font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow-x:hidden;
     }
-    .backdrop{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+
+    .backdrop{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
       background:
-        radial-gradient(1100px 520px at -10% -10%, rgba(34,211,238,.16), transparent 55%),
-        radial-gradient(900px 600px at 120% 120%, rgba(59,130,246,.20), transparent 55%);
-      filter:saturate(115%);
+        radial-gradient(1000px 560px at 8% 0%, rgba(0,80,160,.22), transparent 60%),
+        radial-gradient(1000px 620px at 100% 100%, rgba(176,208,48,.12), transparent 60%);
+      filter:saturate(112%);
     }
 
     #header{ position:sticky; top:0; z-index:30; }
 
-    .seasonbar{
-      display:none; padding:10px 16px; font-size:13px; color:#dbeafe;
-      background:linear-gradient(90deg, rgba(59,130,246,.18), rgba(34,211,238,.18));
-      border-bottom:1px solid var(--border);
-    }
-    .seasonbar.reverse{ background:linear-gradient(90deg, rgba(34,211,238,.18), rgba(59,130,246,.18)); }
+    /* season ribbon container already styled in shared/styles.css via .seasonbar */
+    #seasonTopBar{ display:none; }
 
-    .home-wrap{ max-width:940px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
-    .welcome{ font-size:22px; font-weight:700; letter-spacing:.2px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .welcome::before{ content:""; width:10px; height:10px; border-radius:999px; background:var(--ok); box-shadow:0 0 0 4px rgba(34,197,94,.15); }
-    .pill-row{ display:flex; gap:8px; flex-wrap:wrap; }
-    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:10px;
-      padding:12px 16px; border-radius:14px; border:1px solid var(--border);
-      background:#0b1223; color:#fff; font-weight:600; text-decoration:none; cursor:pointer;
-      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
+    .home-wrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
     }
-    .btn:hover{ border-color:var(--ring); box-shadow:0 10px 26px rgba(2,132,199,.22); }
+
+    .welcome{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:16px 16px 14px;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:0 10px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .welcomeTop{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background:var(--ok);
+      box-shadow:0 0 0 4px rgba(34,197,94,.14);
+      flex:0 0 auto;
+    }
+    .welcomeTitle{
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:.2px;
+      line-height:1.15;
+    }
+
+    .welcomeSub{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.35;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .pill-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:2px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:12px 16px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#0b1223;
+      color:#fff;
+      font-weight:700;
+      text-decoration:none;
+      cursor:pointer;
+      transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+      min-height:46px;
+    }
+    .btn:hover{ border-color:var(--ring); box-shadow:0 12px 28px rgba(0,0,0,.22); }
     .btn:active{ transform:translateY(1px); }
-    .btn.light{ background:#0b1223; color:#e6edf6; border:1px solid var(--border); }
-    .cta-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
-    @media (min-width:720px){ .cta-grid{ grid-template-columns:1fr 1fr; } }
+
+    .chip{
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      color:#e5e7eb;
+      font-weight:700;
+      min-height:40px;
+    }
+    .chip:hover{
+      border-color:rgba(176,208,48,.28);
+      box-shadow:none;
+    }
+
+    .btn.primary{
+      background:var(--one-green);
+      color:#0b1223;
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .cta-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    @media (min-width:720px){
+      .cta-grid{ grid-template-columns:1fr 1fr; }
+    }
+
     .cta-card{
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid var(--border); border-radius:18px; padding:16px;
-      box-shadow:0 8px 26px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.06);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
     }
-    .cta-card h3{ margin:0 0 6px; font-size:18px; }
-    .cta-card p{ margin:0 0 12px; color:var(--muted); }
-    .cta-card .btn{ width:auto; padding:10px 14px; border-radius:12px; }
-    .note-stub{ margin-top:6px; padding:14px 16px; border:1px solid var(--border);
-      border-radius:16px; background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)); color:var(--muted);
+    .cta-head{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
     }
+    .cta-card h3{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+    .cta-card p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .cta-actions{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:4px;
+    }
+
     .small{ font-size:13px; color:var(--muted); }
+
+    .note-stub{
+      padding:14px 16px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      color:var(--muted);
+    }
+    .note-stub strong{ color:#e5e7eb; }
 
     .btn.is-disabled{
       opacity:.5;
@@ -73,38 +211,71 @@
       cursor:not-allowed;
       filter:grayscale(35%);
     }
+
+    /* stronger header logo */
+    .topbar .brand img{ height:34px; }
+    .topbar__center img{ height:34px !important; }
+
+    @media (max-width:520px){
+      .home-wrap{ padding:14px; }
+      .welcomeTitle{ font-size:20px; }
+      .topbar .brand img{ height:32px; }
+      .topbar__center img{ height:32px !important; }
+    }
   </style>
 </head>
 
-<body>
+<body class="app-dark">
   <div class="backdrop"></div>
 
   <div id="header"></div>
-  <div id="seasonTopBar" class="seasonbar"></div>
+
+  <!-- Season ribbon (we keep this, but now it has proper structure + About ONE on right) -->
+  <div id="seasonTopBar" class="seasonbar">
+    <div class="seasonbar__left" id="seasonText"></div>
+    <div class="seasonbar__right">
+      <a class="pill about-pill" href="/about.html" aria-label="About ONE">About ONE</a>
+    </div>
+  </div>
 
   <div class="home-wrap">
-    <div id="welcome" class="welcome">Welcome</div>
+    <div class="welcome">
+      <div class="welcomeTop">
+        <span class="dot" aria-hidden="true"></span>
+        <div id="welcome" class="welcomeTitle">Welcome</div>
+      </div>
 
-    <div class="pill-row">
-      <button id="btnAdminView"   class="btn light" style="display:none">Admin</button>
-      <button id="btnCrispView"   class="btn light" style="display:none">CRISP</button>
-      <button id="btnAcadcomView" class="btn light" style="display:none">Acadcom</button>
-      <button id="btnAlcomView"   class="btn light" style="display:none">Alcom</button>
+      <div class="welcomeSub">Your workspace — choose a module.</div>
+
+      <div class="pill-row">
+        <button id="btnAdminView"   class="btn chip" style="display:none">Admin</button>
+        <button id="btnCrispView"   class="btn chip" style="display:none">CRISP</button>
+        <button id="btnAcadcomView" class="btn chip" style="display:none">Acadcom</button>
+        <button id="btnAlcomView"   class="btn chip" style="display:none">Alcom</button>
+      </div>
     </div>
 
     <div class="cta-grid">
       <div class="cta-card" id="cardAcademics">
-        <h3>Academics</h3>
-        <p>Routine, subjects, and attendance.</p>
-        <a id="btnAcademics" class="btn" href="/academics.html">Go to Academics</a>
-        <div id="acadHint" class="small" style="margin-top:6px"></div>
+        <div class="cta-head">
+          <h3>Academics</h3>
+          <p>Routine, subjects, and attendance.</p>
+        </div>
+        <div class="cta-actions">
+          <a id="btnAcademics" class="btn primary" href="/academics.html">Go to Academics</a>
+        </div>
+        <div id="acadHint" class="small"></div>
       </div>
 
       <div class="cta-card" id="cardPreparation">
-        <h3>Preparation</h3>
-        <p>Mentoring sessions, slots, and bookings.</p>
-        <a id="btnPreparation" class="btn" href="#">Open Preparation</a>
-        <div id="prepHint" class="small" style="margin-top:6px"></div>
+        <div class="cta-head">
+          <h3>Preparation</h3>
+          <p>Mentoring sessions, slots, and bookings.</p>
+        </div>
+        <div class="cta-actions">
+          <a id="btnPreparation" class="btn primary" href="#">Open Preparation</a>
+        </div>
+        <div id="prepHint" class="small"></div>
       </div>
     </div>
 
@@ -118,7 +289,7 @@
     import { attachAuthHandlers } from "/shared/auth.js";
     import { auth, db, doc, getDoc, setDoc, onSnapshot, arrayUnion } from "/shared/firebase.js?v=1.3";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { renderHeader } from "/shared/ui.js";
+    import { renderHeader, initHeaderLogoFallback } from "/shared/ui.js";
 
     const VAPID_PUBLIC_KEY = "BPpJyJX0nHDwJeb1_MfEitAebbQBPtK58SisZAlzxKblgjPIfq9Slzzm2SvJTlxsl7ofq6iEs5H3p6yYowhQscU";
     const isSeniorEmail = (e)=> /^b24.*@astra.xlri.ac.in$/i.test(e||"");
@@ -162,14 +333,23 @@
 
     function setSeasonBar({ seasonName, reverse }) {
       const bar = $("seasonTopBar");
-      if (!bar) return;
-      if (!reverse && !seasonName) { bar.style.display = "none"; bar.textContent=""; bar.classList.remove("reverse"); return; }
+      const textEl = $("seasonText");
+      if (!bar || !textEl) return;
+
+      if (!reverse && !seasonName) {
+        bar.style.display = "none";
+        textEl.textContent = "";
+        bar.classList.remove("reverse");
+        return;
+      }
+
       const parts = [];
       if (seasonName) parts.push(`Season: ${seasonName}`);
       if (reverse) parts.push("Roles reversed");
-      bar.textContent = parts.join(" — ");
+      textEl.textContent = parts.join(" — ");
+
       bar.classList.toggle("reverse", !!reverse);
-      bar.style.display = "block";
+      bar.style.display = "grid";
     }
 
     function applyHomeButtonFlags({ showAcademics=true, showPreparation=true }){
@@ -200,44 +380,42 @@
       return {};
     }
 
-    // ---------- Push Notifications ----------
     function setNotificationStatus(message) {
-        const el = $('notification-status');
-        if (el) el.textContent = message;
+      const el = $('notification-status');
+      if (el) el.textContent = message;
     }
     function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-        return outputArray;
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      return outputArray;
     }
 
     async function subscribeToPushNotifications(user) {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            setNotificationStatus("Push notifications not supported.");
-            return;
-        }
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            let subscription = await registration.pushManager.getSubscription();
-            if (subscription) { setNotificationStatus("You are subscribed to notifications."); return; }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setNotificationStatus("Push notifications not supported.");
+        return;
+      }
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+        if (subscription) { setNotificationStatus("You are subscribed to notifications."); return; }
 
-            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-            subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
-            setNotificationStatus("Successfully subscribed to notifications!");
+        const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+        setNotificationStatus("Successfully subscribed to notifications!");
 
-            const userDocRef = doc(db, "users", user.uid);
-            await setDoc(userDocRef, { pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription))) }, { merge: true });
-        } catch (error) {
-            console.error("Push subscription failed:", error);
-            if (Notification.permission === 'denied') setNotificationStatus("Notifications blocked. Please enable in browser settings.");
-            else setNotificationStatus("Could not subscribe to notifications.");
-        }
+        const userDocRef = doc(db, "users", user.uid);
+        await setDoc(userDocRef, { pushSubscriptions: arrayUnion(JSON.parse(JSON.stringify(subscription))) }, { merge: true });
+      } catch (error) {
+        console.error("Push subscription failed:", error);
+        if (Notification.permission === 'denied') setNotificationStatus("Notifications blocked. Please enable in browser settings.");
+        else setNotificationStatus("Could not subscribe to notifications.");
+      }
     }
 
-    // ---------- Service Worker Registration ----------
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => {
@@ -248,15 +426,16 @@
     }
 
     onAuthStateChanged(auth, async (u)=>{
-      if (!u) return; // Should be handled by attachAuthHandlers, but as a guard
+      if (!u) return;
       const email = u.email || "";
+
       $("header").innerHTML = renderHeader();
+      initHeaderLogoFallback(document);
       attachAuthHandlers();
 
       const name = firstNameFrom(u), handle = emailHandle(email);
       $("welcome").textContent = handle ? `Welcome, ${name} (${handle})` : `Welcome, ${name}`;
-      
-      // Attempt to subscribe to push notifications
+
       subscribeToPushNotifications(u);
 
       const roles = await getRolesByEmail(email);

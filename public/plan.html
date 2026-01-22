@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Plan — OPAXI</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/styles.css?v=2025-09-16c">
+
+  <style>
+    /* Plan page uses the exact palette user locked */
+    :root{
+      --p-bg:#0F1727;
+      --p-card:#1A2233;
+      --p-green:#AAC930;
+      --p-text:#BCC1C9;
+      --p-border:#414D52;
+      --p-white:#F8F8F8;
+
+      /* semantic */
+      --p-danger:#EF4444;
+      --p-warn:#F59E0B;
+      --p-info:#38BDF8;
+    }
+
+    /* Keep header + season bar untouched (renderHeader + shared css). */
+    body.app-dark{
+      background: var(--p-bg);
+    }
+
+    .wrap{max-width:1100px;margin:16px auto;padding:0 16px}
+
+    /* Compact cards for this page only */
+    .plan-card{
+      background: var(--p-card);
+      border: 1px solid rgba(65,77,82,.55);
+      border-radius: 16px;
+      padding: 14px;
+      margin: 14px 0;
+      box-shadow: none;
+    }
+
+    .muted{color:var(--p-text)}
+    .titleRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .titleRow h2{margin:0;font-size:18px;letter-spacing:.2px;color:var(--p-white)}
+    .titleRow .sub{margin:4px 0 0;color:var(--p-text);font-size:12px}
+
+    /* Ensure links styled like buttons have no underline */
+    a.btn, a.btn:visited, a.btn:hover, a.btn:active{ text-decoration:none !important; }
+
+    /* Button alignment: use existing .btn styles, but force green for primary CTAs here */
+    .btn.planGreen{
+      background: var(--p-green) !important;
+      color: #0b1220 !important;
+      border: 1px solid rgba(170,201,48,.55) !important;
+      box-shadow: none !important;
+    }
+
+    .btn.planGhost{
+      background: rgba(255,255,255,.06) !important;
+      color: var(--p-white) !important;
+      border: 1px solid rgba(65,77,82,.65) !important;
+      box-shadow:none !important;
+    }
+
+    /* Layout: calendar + day panel (no page scroll; internal scroll only) */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .85fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media (max-width: 920px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      margin-top:10px;
+    }
+    .toolbar .left,
+    .toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+    .pillLite{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(65,77,82,.65);
+      background: rgba(255,255,255,.04);
+      color: var(--p-text);
+      font-size:12px;
+      line-height:1;
+    }
+
+    /* Legend: forced one-line, no wrapping, scroll if needed */
+    .legend{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      white-space:nowrap;
+      margin-top:10px;
+      padding-bottom:2px;
+    }
+    .legend::-webkit-scrollbar{ height:6px; }
+    .legend::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius:999px; }
+    .legend::-webkit-scrollbar-track{ background: rgba(255,255,255,.06); border-radius:999px; }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(65,77,82,.65);
+      background: rgba(255,255,255,.04);
+      color: var(--p-white);
+      font-size:12px;
+      line-height:1;
+      flex:0 0 auto;
+    }
+    .chip .dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+    .chip.class .dot{background: var(--p-info)}
+    .chip.exam  .dot{background: var(--p-danger)}
+    .chip.event .dot{background: #A78BFA}
+    .chip.sub   .dot{background: var(--p-green)}
+
+    /* Calendar */
+    .calWrap{display:flex;flex-direction:column;gap:10px}
+    .calHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .calHead .monthTitle{
+      font-weight:700;color:var(--p-white);letter-spacing:.2px;
+    }
+    .calHead .mini{
+      color:var(--p-text);font-size:12px;
+    }
+
+    .calGrid{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap:8px;
+    }
+    .dow{
+      font-size:11px;
+      color: var(--p-text);
+      padding:0 2px;
+    }
+
+    .day{
+      border:1px solid rgba(65,77,82,.55);
+      border-radius:14px;
+      background: rgba(255,255,255,.03);
+      padding:10px;
+      min-height:92px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      transition: transform .08s ease, border-color .08s ease;
+    }
+    .day:hover{ transform: translateY(-1px); border-color: rgba(170,201,48,.55); }
+
+    .day.mutedDay{
+      opacity:.55;
+    }
+    .day.active{
+      border-color: rgba(170,201,48,.80);
+      box-shadow: inset 0 0 0 1px rgba(170,201,48,.20);
+    }
+
+    .dayTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .dateNum{
+      font-weight:700;
+      color: var(--p-white);
+      font-size:13px;
+    }
+    .badgeCount{
+      font-size:11px;
+      color: var(--p-text);
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(65,77,82,.60);
+      background: rgba(255,255,255,.03);
+      flex:0 0 auto;
+    }
+
+    .dots{display:flex;gap:6px;flex-wrap:wrap}
+    .dot{
+      width:6px;height:6px;border-radius:999px;
+      background: rgba(255,255,255,.18);
+    }
+    .dot.c{background: var(--p-info)}
+    .dot.x{background: var(--p-danger)}
+    .dot.e{background: #A78BFA}
+    .dot.s{background: var(--p-green)}
+
+    /* Day panel */
+    .panelHead{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .panelHead h3{
+      margin:0;
+      color:var(--p-white);
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .panelHead .meta{
+      margin-top:4px;
+      color:var(--p-text);
+      font-size:12px;
+    }
+
+    .panelBody{
+      margin-top:10px;
+      border-top:1px solid rgba(65,77,82,.45);
+      padding-top:10px;
+      max-height: 520px;
+      overflow:auto;
+    }
+    @media (max-width: 920px){
+      .panelBody{ max-height: 360px; }
+    }
+
+    .item{
+      border:1px solid rgba(65,77,82,.45);
+      border-radius:14px;
+      background: rgba(255,255,255,.03);
+      padding:10px;
+      margin:8px 0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .itemTop{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .itemTitle{
+      color:var(--p-white);
+      font-weight:700;
+      font-size:13px;
+    }
+    .itemSub{
+      color:var(--p-text);
+      font-size:12px;
+    }
+    .tagRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .tag{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:11px;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(65,77,82,.60);
+      background: rgba(255,255,255,.03);
+      color: var(--p-text);
+    }
+
+    /* “Coming soon” placeholders (no backend investment) */
+    .disabled{
+      opacity:.55;
+      filter:saturate(.8);
+      pointer-events:none;
+    }
+  </style>
+</head>
+
+<body class="app-dark">
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="plan-card">
+      <div class="titleRow">
+        <div>
+          <h2>Plan</h2>
+          <div class="sub">Unified calendar for Classes, Exams, Events & Submissions. Click a day to see details.</div>
+        </div>
+        <div class="row" style="gap:10px;align-items:center">
+          <a class="btn planGreen" href="/academics.html">Back to Academics</a>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="left">
+          <span class="pillLite" id="planCohortPill">Role: —</span>
+          <span class="pillLite" id="planSectionPill">Section: —</span>
+        </div>
+        <div class="right">
+          <button class="btn planGhost" id="btnPrevMonth" type="button">Prev</button>
+          <button class="btn planGhost" id="btnToday" type="button">Today</button>
+          <button class="btn planGhost" id="btnNextMonth" type="button">Next</button>
+          <button class="btn planGreen disabled" id="btnOptimize" type="button" title="Coming soon">Optimize</button>
+        </div>
+      </div>
+
+      <!-- Legend: single line -->
+      <div class="legend" aria-label="Legend">
+        <span class="chip class"><span class="dot"></span>Class</span>
+        <span class="chip exam"><span class="dot"></span>Exam</span>
+        <span class="chip event"><span class="dot"></span>Event</span>
+        <span class="chip sub"><span class="dot"></span>Submissions</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Calendar -->
+      <div class="plan-card calWrap">
+        <div class="calHead">
+          <div>
+            <div class="monthTitle" id="monthTitle">—</div>
+            <div class="mini muted" id="monthMini">Click a day to see what’s scheduled.</div>
+          </div>
+          <div class="row" style="gap:10px">
+            <span class="pillLite" id="syncPill">Routine: Loading…</span>
+          </div>
+        </div>
+
+        <div class="calGrid" id="calDow">
+          <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
+        </div>
+
+        <div class="calGrid" id="calGrid" aria-label="Monthly calendar"></div>
+      </div>
+
+      <!-- Day Panel -->
+      <div class="plan-card">
+        <div class="panelHead">
+          <div>
+            <h3 id="dayTitle">Select a day</h3>
+            <div class="meta" id="dayMeta">We’ll show your classes/exams/events/submissions for that date.</div>
+          </div>
+          <div class="row" style="gap:8px;align-items:center">
+            <a class="btn planGreen" id="btnMarkToday" href="/home.html?attn=1" title="If you don’t mark, you will be absent.">Mark Today</a>
+          </div>
+        </div>
+
+        <div class="panelBody" id="dayPanelBody">
+          <div class="muted" style="font-size:12px">
+            Tip: Calendar is for planning, not skipping. Use it to see busy days and stay ahead.
+          </div>
+
+          <div class="plan-card disabled" style="margin-top:10px">
+            <div style="color:var(--p-white);font-weight:700;font-size:13px">Attendance risk (Coming soon)</div>
+            <div class="muted" style="font-size:12px;margin-top:6px">
+              We’ll add low-key warnings when you’re approaching limits — without alarming UI.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderHeader } from "/shared/ui.js";
+    import { attachAuthHandlers } from "/shared/auth.js";
+    import { auth } from "/shared/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { PlanController } from "/modules/plan/PlanController.js";
+
+    onAuthStateChanged(auth, async (u) => {
+      const email = u?.email || "";
+
+      document.getElementById("header").innerHTML = renderHeader({
+        title: "OPAXI",
+        email,
+        showAdmin: true,
+        showCrisp: true,
+        showAcadcom: true,
+        seasonText: "Season: SIP",
+        showHomeInSeason: true
+      });
+      attachAuthHandlers();
+
+      (new PlanController()).init();
+    });
+  </script>
+</body>
+</html>

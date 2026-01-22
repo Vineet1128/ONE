@@ -6,146 +6,304 @@
   <title>ONE</title>
 
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/assets/common/logo.png">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#101828">
+
+  <!-- iOS PWA support -->
+  <link rel="apple-touch-icon" href="/assets/brand/one/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/styles.css"/>
 
   <style>
     :root{
-      --bg:#0f172a; --panel:#0b1223; --text:#e5e7eb; --muted:#94a3b8;
-      --ring:rgba(59,130,246,.35); --accent:#3b82f6; --accent2:#22d3ee;
-      --border:rgba(148,163,184,.18); --ok:#22c55e; --bad:#ef4444;
+      --bg:#101828;
+      --panel:#0b1223;
+      --text:#F8F8F8;
+      --muted:#94a3b8;
+      --border:rgba(148,163,184,.18);
+
+      --one-green:#B0D030;
+      --one-blue:#0050A0;
+
+      --ring:rgba(176,208,48,.28);
     }
+
     html,body{height:100%}
     body{
-      margin:0; background:var(--bg); color:var(--text);
+      margin:0;
+      min-height:100dvh;
+      background:var(--bg);
+      color:var(--text);
       font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      display:flex; align-items:center; justify-content:center; padding:20px;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow-x:hidden;
     }
-    .backdrop{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+
+    .bg{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
       background:
-        radial-gradient(1100px 520px at -10% -10%, rgba(34,211,238,.16), transparent 55%),
-        radial-gradient(900px 600px at 120% 120%, rgba(59,130,246,.20), transparent 55%);
-      filter:saturate(115%);
+        radial-gradient(900px 520px at 10% 0%, rgba(0,80,160,.22), transparent 60%),
+        radial-gradient(900px 560px at 100% 100%, rgba(176,208,48,.12), transparent 60%);
+      filter:saturate(112%);
     }
-    .card{
+
+    .page{
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+    }
+    .xlri{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+    }
+    .xlri img{
+      height:28px;
+      width:auto;
+      display:block;
+    }
+    .topbar .spacer{
+      width:44px;
+      height:1px;
+      opacity:0;
+    }
+
+    .hero{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 16px 0;
+    }
+    .heroInner{
+      width:min(520px, 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      text-align:center;
+    }
+    .oneLogo{
+      width:min(320px, 78vw);
+      height:auto;
+      display:block;
+      filter: drop-shadow(0 18px 40px rgba(0,0,0,.30));
+      object-fit:contain;
+    }
+
+    .sheet{
+      width:100%;
+      display:flex;
+      justify-content:center;
+      padding:0 16px 18px;
+    }
+    .sheetInner{
       width:min(560px, 100%);
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid var(--border); border-radius:22px; padding:22px;
-      box-shadow:0 12px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:22px;
+      box-shadow:0 18px 44px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+      padding:18px;
     }
-    .brand{ display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
-    .brand img{ height:54px; width:auto; border-radius:12px; }
-    .brand h1{ margin:0; font-size:34px; letter-spacing:.4px; }
-    .brand p{ margin:0; font-size:13px; color:var(--muted); font-weight:600; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:12px; font-weight:700; }
-    .divider{ height:1px; background:var(--border); margin:18px 0; }
 
     .form{ display:flex; flex-direction:column; gap:10px; }
     .field{ display:flex; flex-direction:column; gap:6px; }
     label{ font-size:12px; color:var(--muted); font-weight:700; }
+
     input{
-      padding:12px 12px; border-radius:14px;
-      border:1px solid var(--border); background:#0b1223; color:#fff; outline:none;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:var(--panel);
+      color:#fff;
+      outline:none;
     }
-    input:focus{ border-color:var(--ring); box-shadow:0 0 0 3px rgba(59,130,246,.18); }
+    input:focus{
+      border-color:rgba(176,208,48,.45);
+      box-shadow:0 0 0 3px rgba(176,208,48,.16);
+    }
+
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+
     .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:10px 14px; border-radius:14px; border:1px solid var(--border);
-      background:#0b1223; color:#fff; font-weight:800; text-decoration:none; cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#111827;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
       transition:transform .04s ease, box-shadow .15s ease, border-color .15s ease;
+      min-height:46px;
+      flex:1 1 160px;
     }
-    .btn:hover{ border-color:var(--ring); box-shadow:0 10px 26px rgba(2,132,199,.22); }
+    .btn:hover{ border-color:var(--ring); box-shadow:0 12px 28px rgba(0,0,0,.22); }
     .btn:active{ transform:translateY(1px); }
-    .btn.primary{ background:linear-gradient(90deg, rgba(59,130,246,.95), rgba(34,211,238,.85)); border:none; }
-    .btn.google{ background:#0b1223; border:1px solid var(--border); }
-    .btn.ghost{ background:transparent; }
+
+    .btn.primary{
+      background:var(--one-green);
+      color:#0b1223;
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .btn.google{
+      background:#0b1223;
+      color:#fff;
+      border:1px solid var(--border);
+    }
+
+    .btn.ghost{
+      background:transparent;
+      border:1px solid transparent;
+      color:#cbd5e1;
+      flex:0 0 auto;
+      min-height:auto;
+      padding:10px 10px;
+    }
 
     .status{
-      margin-top:12px; padding:12px 12px; border:1px solid var(--border); border-radius:16px;
+      margin-top:10px;
+      padding:12px 12px;
+      border:1px solid var(--border);
+      border-radius:16px;
       background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-      color:var(--muted); font-size:13px; line-height:1.4;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
     }
-    .status.ok{ border-color: rgba(34,197,94,.30); }
+    .status.ok{ border-color: rgba(176,208,48,.26); }
     .status.bad{ border-color: rgba(239,68,68,.30); }
+
     .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; color:#e2e8f0; }
-    .small{ font-size:12px; color:var(--muted); }
-    a{ color:#93c5fd; text-decoration:none; } a:hover{ text-decoration:underline; }
-    .hide{ display:none !important; }
+    .small{ font-size:12px; color:var(--muted); line-height:1.4; }
     .center{ text-align:center; }
+    .hide{ display:none !important; }
+
+    @media (max-width: 420px){
+      .sheetInner{ padding:16px; border-radius:20px; }
+      .oneLogo{ width:min(300px, 84vw); }
+    }
   </style>
 </head>
 
-<body>
-  <div class="backdrop"></div>
+<body class="app-dark">
+  <div class="bg"></div>
 
-  <main class="card" aria-label="ONE entry">
-    <div class="brand">
-      <img src="/assets/common/logo.png" alt="ONE logo">
-      <h1>ONE</h1>
-      <p>Built by Students of XLRI</p>
-    </div>
+  <div class="page">
+    <header class="topbar">
+      <div class="xlri">
+        <img src="/assets/brand/xlri/xlri-mark.png" alt="XLRI">
+      </div>
+      <div class="spacer"></div>
+    </header>
 
-    <div class="divider"></div>
+    <section class="hero">
+      <div class="heroInner">
+        <!-- Logo with safe fallback chain (no behavior change) -->
+        <img
+          id="oneIndexLogo"
+          class="oneLogo"
+          src="/assets/brand/one/one-logo-dark.png"
+          alt="ONE — Built by XLRI Students"
+          loading="eager"
+          decoding="async"
+        >
+      </div>
+    </section>
 
-    <!-- MODE: IDENTITY (email only) -->
-    <form id="formIdentity" class="form">
-      <div class="field">
-        <label for="idEmail">Email or Google account</label>
-        <input id="idEmail" type="email" placeholder="you@astra.xlri.ac.in / you@xlri.ac.in / gmail.com" required>
-      </div>
-      <div class="row">
-        <button id="btnContinue" class="btn primary" type="submit">Continue</button>
-        <button id="btnGoogle" class="btn google" type="button">Continue with Google</button>
-      </div>
-      <div class="small center">
-        Students usually use <span class="mono">@astra.xlri.ac.in</span>, Faculty use <span class="mono">@xlri.ac.in</span>, Alumni may use personal email.
-      </div>
-    </form>
+    <section class="sheet">
+      <main class="sheetInner" aria-label="ONE entry">
 
-    <!-- MODE: LOGIN (password) -->
-    <form id="formLogin" class="form hide" autocomplete="on">
-      <div class="field">
-        <label>Email</label>
-        <input id="loginEmail" type="email" readonly>
-      </div>
-      <div class="field">
-        <label for="loginPass">Password</label>
-        <input id="loginPass" type="password" placeholder="Your password" minlength="6" required>
-      </div>
-      <div class="row">
-        <button id="btnDoLogin" class="btn primary" type="submit">Login</button>
-        <button id="btnForgot" class="btn ghost" type="button">Forgot password?</button>
-        <button id="btnResend" class="btn ghost hide" type="button">Resend verification email</button>
-        <button id="btnSignOut" class="btn ghost hide" type="button">Sign out</button>
-      </div>
-    </form>
+        <form id="formIdentity" class="form">
+          <div class="field">
+            <label for="idEmail">Email or Google account</label>
+            <input id="idEmail" type="email" placeholder="you@astra.xlri.ac.in / you@xlri.ac.in / gmail.com" required>
+          </div>
 
-    <!-- MODE: SIGNUP -->
-    <form id="formSignup" class="form hide" autocomplete="on">
-      <div class="field">
-        <label>Email</label>
-        <input id="signupEmail" type="email" readonly>
-      </div>
-      <div class="field">
-        <label for="signupPass">Create password</label>
-        <input id="signupPass" type="password" placeholder="Minimum 6 characters" minlength="6" required>
-      </div>
-      <div class="row">
-        <button id="btnDoSignup" class="btn primary" type="submit">Create account</button>
-        <button id="btnBackIdentity" class="btn ghost" type="button">Back</button>
-      </div>
-      <div class="small">We’ll email you a verification link after signup.</div>
-    </form>
+          <div class="row">
+            <button id="btnContinue" class="btn primary" type="submit">Continue</button>
+            <button id="btnGoogle" class="btn google" type="button">Continue with Google</button>
+          </div>
 
-    <div id="status" class="status">Checking session…</div>
-  </main>
+          <div class="small center">
+            Students usually use <span class="mono">@astra.xlri.ac.in</span>, Faculty use <span class="mono">@xlri.ac.in</span>, Alumni may use personal email.
+          </div>
+        </form>
 
+        <form id="formLogin" class="form hide" autocomplete="on">
+          <div class="field">
+            <label>Email</label>
+            <input id="loginEmail" type="email" readonly>
+          </div>
+          <div class="field">
+            <label for="loginPass">Password</label>
+            <input id="loginPass" type="password" placeholder="Your password" minlength="6" required>
+          </div>
+          <div class="row">
+            <button id="btnDoLogin" class="btn primary" type="submit">Login</button>
+            <button id="btnForgot" class="btn ghost" type="button">Forgot password?</button>
+            <button id="btnResend" class="btn ghost hide" type="button">Resend verification email</button>
+            <button id="btnSignOut" class="btn ghost hide" type="button">Sign out</button>
+          </div>
+        </form>
+
+        <form id="formSignup" class="form hide" autocomplete="on">
+          <div class="field">
+            <label>Email</label>
+            <input id="signupEmail" type="email" readonly>
+          </div>
+          <div class="field">
+            <label for="signupPass">Create password</label>
+            <input id="signupPass" type="password" placeholder="Minimum 6 characters" minlength="6" required>
+          </div>
+          <div class="row">
+            <button id="btnDoSignup" class="btn primary" type="submit">Create account</button>
+            <button id="btnBackIdentity" class="btn ghost" type="button">Back</button>
+          </div>
+          <div class="small">We’ll email you a verification link after signup.</div>
+        </form>
+
+        <div id="status" class="status">Checking session…</div>
+      </main>
+    </section>
+  </div>
+
+  <!-- JS BELOW IS UNCHANGED (except logo fallback helper at top) -->
   <script type="module">
+    // --- Logo fallback (safe; no app logic change) ---
+    (() => {
+      const img = document.getElementById("oneIndexLogo");
+      if (!img) return;
+      const fallbacks = [
+        "/assets/brand/one/one-logo-dark.png",
+        "/assets/brand/one/one-lockup.png",
+        "/assets/brand/one/one-mark-512.png",
+        "/assets/brand/one/one-mark-192.png"
+      ];
+      let i = 0;
+      img.addEventListener("error", () => {
+        i += 1;
+        if (i < fallbacks.length) img.src = fallbacks[i];
+      });
+    })();
+
     import { auth, db, doc, getDoc, setDoc, serverTimestamp, arrayUnion } from "/shared/firebase.js?v=1.8";
     import {
       onAuthStateChanged,
@@ -162,7 +320,6 @@
 
     const $ = (id)=>document.getElementById(id);
 
-    // ---------- UI refs ----------
     const formIdentity = $("formIdentity");
     const formLogin    = $("formLogin");
     const formSignup   = $("formSignup");
@@ -181,12 +338,10 @@
     const btnBackId    = $("btnBackIdentity");
     const statusEl     = $("status");
 
-    // ---------- VAPID Public Key ----------
     const VAPID_PUBLIC_KEY = "BPpJyJX0nHDwJeb1_MfEitAebbQBPtK58SisZAlzxKblgjPIfq9Slzzm2SvJTlxsl7ofq6iEs5H3p6yYowhQscU";
 
-    // ---------- Constants ----------
-    const ROLLOVER_MONTH = 3;   // March
-    const ROLLOVER_DAY   = 15;  // 15th
+    const ROLLOVER_MONTH = 3;
+    const ROLLOVER_DAY   = 15;
     const PROGRAM_YEARS_DEFAULT = 2;
     const studentMatch = (email)=> /^b(\d{2}).*@astra\.xlri\.ac\.in$/i.exec(email||"");
     const lcEmail = (e)=> (e||"").toLowerCase();
@@ -200,7 +355,6 @@
       if (mode === "login") {
         loginEmail.value = emailValue;
         loginPass.value = "";
-        // Reset state
         show(btnResend, false);
         show(btnOut, true);
         setStatus("Enter your password to continue.");
@@ -270,7 +424,6 @@
       return true;
     }
     async function routeUser(user){
-      // Non-blocking call to subscribe to push notifications
       subscribeToPushNotifications(user);
 
       const uref = doc(db,"users",user.uid); const usnap = await getDoc(uref);
@@ -289,7 +442,6 @@
       return window.location.replace("/onboarding.html");
     }
 
-    // ---------- Push Notifications ----------
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -309,8 +461,7 @@
       try {
         const registration = await navigator.serviceWorker.ready;
         let subscription = await registration.pushManager.getSubscription();
-
-        if (subscription) { return; } // Already subscribed
+        if (subscription) { return; }
 
         const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
         subscription = await registration.pushManager.subscribe({
@@ -328,7 +479,6 @@
       }
     }
 
-    // ---------- Service Worker Registration ----------
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(error => {
@@ -337,28 +487,23 @@
       });
     }
 
-    // ---------- Central Session listener (the single source of truth) ----------
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        await reload(user); // Make sure we have the latest user state (e.g., emailVerified)
+        await reload(user);
         if (user.emailVerified) {
           setStatus(`Signed in as <span class="mono">${user.email}</span>. Routing…`, "ok");
           show(btnOut, true);
           routeUser(user);
         } else {
-          // User is signed in but email is not verified.
-          // This can happen after signup or if they log in without ever verifying.
           setMode("login", user.email);
           setStatus(`Email not verified for <span class="mono">${user.email}</span>.`, "bad");
           show(btnResend, true);
         }
       } else {
-        // No user is signed in.
         setMode("identity");
       }
     });
 
-    // ---------- Identity-first flow ----------
     formIdentity.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (idEmail.value||"").trim();
@@ -383,20 +528,17 @@
       const provider = new GoogleAuthProvider();
       try {
         await signInWithPopup(auth, provider);
-        // The onAuthStateChanged observer will handle the successful sign-in.
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Google sign-in failed."), "bad");
       }
     });
 
-    // ---------- Login & Signup ----------
     formLogin.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const email = (loginEmail.value||"").trim();
       const pass  = (loginPass.value||"");
       btnDoLogin.disabled = true; btnDoLogin.style.opacity="0.7";
       try{
-        // onAuthStateChanged will handle the success case
         await signInWithEmailAndPassword(auth, email, pass);
       } catch(err){
         setStatus(friendly(err?.code) || (err?.message || "Login failed."), "bad");
@@ -413,9 +555,7 @@
       try{
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await sendEmailVerification(cred.user);
-        // onAuthStateChanged will see the new user, but emailVerified will be false.
-        // It will then show the correct "verify your email" message.
-        setMode("login", email); // Switch to login mode
+        setMode("login", email);
       } catch(err){
         if (err?.code === "auth/email-already-in-use"){
           setMode("login", email);
@@ -428,7 +568,6 @@
       }
     });
 
-    // ---------- Helper buttons ----------
     btnBackId.addEventListener("click", ()=> setMode("identity"));
 
     btnForgot.addEventListener("click", async ()=> {
@@ -454,7 +593,6 @@
 
     btnOut.addEventListener("click", async ()=> {
       await signOut(auth);
-      // onAuthStateChanged will handle UI changes
     });
   </script>
 </body>

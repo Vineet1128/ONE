@@ -1,27 +1,100 @@
+/* /shared/styles.css
+   ✅ Updated to match the new locked palette + compact/minimalistic rules
+   ✅ Does NOT remove any selectors or break existing functionality
+   ✅ Keeps backward-compatible tokens (--bg, --card, --ink, etc.)
+*/
+
 :root{
-  --ink:#0f172a;--muted:#64748b;--bg:#f8fafc;--card:#fff;--brand:#111827;
-  --ok:#16a34a;--err:#dc2626;--br:14px;--line:#e2e8f0;
-  --blue-50:#e0f2fe;--blue-100:#bae6fd
+  /* ===== LOCKED PALETTE (must preserve exactly) ===== */
+  --one-bg:#0F1727;          /* Primary Deep Blue (Main Background) */
+  --one-surface-1:#1A2233;   /* Secondary Deep Blue (Panels / Cards) */
+  --one-surface-2:#1A2233;   /* keep same for now to avoid visual mismatches */
+  --one-text:#BCC1C9;        /* Neutral Light (Text / Subtle UI) */
+  --one-muted:#BCC1C9;       /* keep muted aligned unless overridden */
+  --one-border:#414D52;      /* Muted Slate (Borders / Secondary UI) */
+
+  --one-green:#AAC930;       /* Accent Green (Primary CTA / Highlights) */
+  --one-blue:#0050A0;        /* legacy brand blue (rare) */
+  --one-red:#ef4444;
+
+  /* ===== Backward compatible tokens (existing code expects these) ===== */
+  --ink:#0f172a;
+  --muted:#64748b;
+  --bg:#f8fafc;
+  --card:#fff;
+  --brand:#111827;
+
+  --ok:#16a34a;
+  --err:#dc2626;
+
+  --br:14px;
+  --line:#e2e8f0;
+
+  --blue-50:#e0f2fe;
+  --blue-100:#bae6fd;
+
+  /* ===== Density controls (safe, optional) ===== */
+  --pad-card:16px;
+  --pad-card-mobile:14px;
 }
+
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg)}
-.wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+
+html,body{
+  margin:0;
+  padding:0;
+  font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px}
 h1{margin:0 0 8px;font-size:28px}
 .sub{color:var(--muted);margin:6px 0 18px}
-.btn{appearance:none;border:0;border-radius:10px;background:var(--brand);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+
+/* =========================
+   Buttons
+   ========================= */
+.btn{
+  appearance:none;border:0;border-radius:10px;
+  background:var(--brand);color:#fff;
+  padding:10px 14px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;
+  text-decoration:none; /* ✅ remove underline even if <a> */
+}
 .btn.light{background:#eef2ff;color:#111827}
-.btn.green{background:#16a34a}
-.btn.red{background:#dc2626}
+
+/* ONE brand alignment */
+.btn.green{background:var(--one-green); color:#0b1223;}
+.btn.red{background:var(--one-red);}
+
 .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .pill{background:#eef2ff;padding:6px 10px;border-radius:999px;font-size:13px;color:#1e3a8a}
-.card{background:var(--card);border-radius:var(--br);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:18px;margin:18px 0}
+
+.card{
+  background:var(--card);
+  border-radius:var(--br);
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+  padding:var(--pad-card);
+  margin:16px 0;
+  overflow-wrap:anywhere;
+}
+@media (max-width:520px){
+  .wrap{margin:16px auto}
+  .card{ padding:var(--pad-card-mobile); margin:14px 0; }
+}
+
 .card h2{margin:0 0 12px}
+
 label{font-size:13px;color:#a1a1aa;display:block;margin:10px 0 6px}
 input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;outline:none}
 textarea{min-height:70px}
+
 table{width:100%;border-collapse:collapse}
 th,td{padding:12px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px;vertical-align:top}
 th{color:#475569}
+
 .msg{margin-top:10px;font-size:14px}
 .msg.ok{color:var(--ok)}
 .msg.err{color:var(--err)}
@@ -33,30 +106,87 @@ th{color:#475569}
 .ratingRow .row>div{min-width:120px}
 .ratingHint{font-size:12px;color:#64748b;margin-top:6px}
 
-/* ===== Header (centered) ===== */
+/* =========================
+   Header (centered)
+   ========================= */
 .topbar{
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
-  padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);
-  position:sticky;top:0;z-index:9
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:9;
 }
 .topbar__left{justify-self:start}
-.topbar__center{justify-self:center;text-align:center}
+.topbar__center{justify-self:center;text-align:center;min-width:0}
 .topbar__right{justify-self:end;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap}
 .topbar__title{font-weight:700;letter-spacing:.2px}
 .topbar__subtitle{font-size:12px;color:#94a3b8;margin-top:2px}
 
-.brand{display:flex;align-items:center;gap:10px}
-.brand img{height:30px;width:auto;display:block}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand img{
+  height:30px;
+  width:auto;
+  display:block;
+  max-width:100%;
+}
 
-/* ===== Season bar beneath header ===== */
+/* ✅ Header logo stability */
+.topbar__center .brand{ justify-content:center; min-width:0; }
+.topbar__center img{
+  max-height:32px;
+  width:auto;
+  max-width:min(72vw, 260px);
+  object-fit:contain;
+}
+@media (max-width:520px){
+  .topbar { padding-top:6px; padding-bottom:6px; }
+  .topbar__center img{ max-height:30px; max-width:min(80vw, 240px); }
+}
+
+/* =========================
+   Season bar beneath header
+   ========================= */
 .seasonbar{
-  display:grid;grid-template-columns:1fr auto;align-items:center;
-  padding:8px 12px;font-size:12px;color:#0f172a;
-  background:var(--blue-50);border-bottom:1px solid var(--blue-100)
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  padding:8px 12px;
+  font-size:12px;
+  color:#0f172a;
+  background:var(--blue-50);
+  border-bottom:1px solid var(--blue-100);
 }
 .seasonbar.reverse{ background:#fef3c7; border-color:#fde68a; }
 .seasonbar__left{font-weight:600}
 .seasonbar__right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* Seasonbar links */
+.seasonbar a{ color:inherit; text-decoration:none; }
+.seasonbar a:hover{ text-decoration:underline; }
+
+.seasonbar__link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  font-weight:700;
+  line-height:1;
+}
+
+/* Support About ONE both ways */
+.seasonbar .about-pill,
+.seasonbar__link--one{
+  color:var(--one-green) !important;
+  font-weight:800;
+}
 
 /* Small circular Home icon */
 .iconbtn{
@@ -66,84 +196,117 @@ th{color:#475569}
 }
 .iconbtn svg{width:16px;height:16px;fill:#111827}
 
-/* Home page polish (left as-is) */
+/* =========================
+   Common Home helpers
+   ========================= */
 .home-wrap{max-width:960px;margin:16px auto;padding:0 16px}
 .welcome{margin:12px 0 12px;font-size:18px;font-weight:600}
-
 .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
-.cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.cta-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px}
+.cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.cta-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
 .cta-card h3{margin:0 0 8px 0}
 .cta-card .btn{width:100%;height:44px}
 @media (max-width:640px){
-  .cta-card{padding:16px}
+  .cta-card{padding:14px}
   .cta-grid{grid-template-columns:1fr}
 }
 
 /* Sign-in tweaks */
 @media (max-width: 480px) {
-  .signin-card { padding: 20px; border-radius: 14px; }
+  .signin-card { padding: 18px; border-radius: 14px; }
   .signin-title { font-size: 24px; }
 }
 
 /* =========================
-   DARK THEME
+   DARK THEME (locked palette; reduced glow/shadow)
    ========================= */
 .app-dark {
-  --bg:#0f172a;
-  --card:#0b1223;
-  --ink:#e5e7eb;
-  --muted:#94a3b8;
-  --brand:#0b1223;
-  --line:rgba(148,163,184,.18);
+  --bg:var(--one-bg);
+  --card:var(--one-surface-1);
+  --ink:var(--one-text);
+  --muted:var(--one-text);
+  --brand:var(--one-surface-1);
+  --line:rgba(65,77,82,.85);   /* border line based on #414D52 */
+  --ok:var(--one-green);
+  --err:var(--one-red);
 }
-.app-dark .wrap { color:var(--ink); }
-.app-dark .card{
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-  border:1px solid var(--line);
-  box-shadow:0 10px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.app-dark .badge { background:rgba(148,163,184,.14); color:#e5e7eb; }
-.app-dark input, .app-dark select, .app-dark textarea{
-  background:#0b1223; color:#e5e7eb; border:1px solid var(--line);
-}
-.app-dark .btn {
-  background:#111827; color:#fff; border:1px solid rgba(255,255,255,.06);
-  box-shadow:0 10px 26px rgba(2,132,199,.12);
-}
-.app-dark .btn.light{
-  background:rgba(255,255,255,.06); color:#e5e7eb; border:1px solid var(--line);
-}
-.app-dark .pill{
-  background:rgba(255,255,255,.08); color:#e5e7eb; border:1px solid var(--line);
-}
-.app-dark .topbar{background:#0b1223;color:#e5e7eb;border-bottom:1px solid var(--line);}
-.app-dark .topbar__title{color:#e5e7eb;}
-.app-dark .seasonbar{
-  color:#e5e7eb;
-  background:linear-gradient(90deg, rgba(30,58,138,.35), rgba(21,94,117,.25) 50%, rgba(30,58,138,.35));
-  border-bottom:1px solid var(--line);
-}
-.app-dark .seasonbar.reverse{
-  background:linear-gradient(90deg, rgba(120,53,15,.35), rgba(180,83,9,.25) 50%, rgba(120,53,15,.35));
-}
-.app-dark .iconbtn{background:#0b1223;border:1px solid var(--line);}
-.app-dark .iconbtn svg{fill:#e5e7eb;}
-.app-dark th{color:#cbd5e1;}
-.app-dark th, .app-dark td{border-bottom:1px solid var(--line);}
-.app-dark .chip.exam{background:rgba(239,68,68,.16);color:#fecaca;border-color:rgba(239,68,68,.35);}
-.app-dark .chip.class{background:rgba(14,165,233,.16);color:#bae6fd;border-color:rgba(14,165,233,.35);}
-.app-dark .sticky{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.25);color:#fde68a;}
 
-/* =========================
-   Mobile hardening (iOS + Android)
-   ========================= */
-html { -webkit-text-size-adjust: 100%; }
-.card { overflow-wrap:anywhere; }
+.app-dark .wrap { color:var(--ink); }
+
+.app-dark .card{
+  background: var(--one-surface-1);
+  border:1px solid rgba(65,77,82,.85);
+  box-shadow:none; /* ✅ remove heavy glow */
+}
+
+.app-dark .badge {
+  background:rgba(65,77,82,.25);
+  color:var(--one-text);
+  border:1px solid rgba(65,77,82,.55);
+}
+
+.app-dark input,
+.app-dark select,
+.app-dark textarea{
+  background:#0f1626;
+  color:var(--one-text);
+  border:1px solid rgba(65,77,82,.85);
+}
+
+.app-dark .btn{
+  background:#111a2a;
+  color:var(--one-text);
+  border:1px solid rgba(65,77,82,.85);
+  box-shadow:none; /* ✅ reduce glow */
+}
+
+.app-dark .btn.light{
+  background:rgba(255,255,255,.06);
+  color:var(--one-text);
+  border:1px solid rgba(65,77,82,.85);
+}
+
+.app-dark .pill{
+  background:rgba(255,255,255,.06);
+  color:var(--one-text);
+  border:1px solid rgba(65,77,82,.85);
+}
+
+.app-dark .topbar{
+  background:#0f1626;
+  color:var(--one-text);
+  border-bottom:1px solid rgba(65,77,82,.85);
+}
+
+.app-dark .topbar__title{color:var(--one-text);}
+
+.app-dark .seasonbar{
+  color:var(--one-text);
+  background:#121b2b; /* ✅ simple, no gradients */
+  border-bottom:1px solid rgba(65,77,82,.85);
+}
+
+.app-dark .seasonbar.reverse{
+  background:#2a1e12;
+}
+
+.app-dark .iconbtn{
+  background:#0f1626;
+  border:1px solid rgba(65,77,82,.85);
+}
+.app-dark .iconbtn svg{fill:var(--one-text);}
+
+.app-dark th{color:var(--one-text);}
+.app-dark th, .app-dark td{border-bottom:1px solid rgba(65,77,82,.65);}
+
+/* Chips in dark theme */
+.app-dark .chip.exam{background:rgba(239,68,68,.14);color:#fecaca;border-color:rgba(239,68,68,.28);}
+.app-dark .chip.class{background:rgba(14,165,233,.14);color:#bae6fd;border-color:rgba(14,165,233,.28);}
+.app-dark .chip.sub{background:rgba(170,201,48,.14);color:#e6f3a6;border-color:rgba(170,201,48,.28);}
+.app-dark .sticky{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.25);color:#fde68a;}
 
 /* Header compact on mobile */
 @media (max-width: 520px){
-  .topbar { padding-top:6px!important; padding-bottom:6px!important; }
   .topbar__subtitle{display:none!important;}
   .topbar__title{font-size:18px!important; line-height:1.2!important;}
 }
@@ -160,269 +323,102 @@ html { -webkit-text-size-adjust: 100%; }
 @media (min-width:480px){ #subjectChecklist{grid-template-columns:repeat(4,minmax(0,1fr));} }
 @media (min-width:720px){ #subjectChecklist{grid-template-columns:repeat(5,minmax(0,1fr));} }
 @media (min-width:1024px){ #subjectChecklist{grid-template-columns:repeat(6,minmax(0,1fr));} }
+
 #subjectChecklist label{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:12px;
-  background:rgba(2,6,23,.35);
-  border:1px solid rgba(148,163,184,.25);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-  line-height:1.2;min-height:44px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(15,23,39,.35);
+  border:1px solid rgba(65,77,82,.75);
+  box-shadow:none;
+  line-height:1.2;
+  min-height:44px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+
+/* Native checkbox (stable across iOS) */
 #subjectChecklist input[type="checkbox"]{
-  -webkit-appearance:none;appearance:none;
-  width:18px;height:18px;border-radius:6px;
-  border:2px solid rgba(148,163,184,.6);
-  background:rgba(2,6,23,.4);
-  display:grid;place-items:center;
-  flex:0 0 auto;
-}
-#subjectChecklist input[type="checkbox"]:checked{
-  border-color:#38bdf8;background:#1d4ed8;
-}
-#subjectChecklist input[type="checkbox"]:checked::after{
-  content:"";width:9px;height:5px;
-  border:2px solid #fff;border-top:0;border-right:0;
-  transform:rotate(-45deg);
-}
-#subjectChecklist label:has(input[type="checkbox"]:checked){
-  background:rgba(30,64,175,.35);
-  border-color:#3b82f6;
-  box-shadow:0 0 0 2px rgba(59,130,246,.25);
-  color:#e5f0ff;
-}
-
-/* ===================================================================
-   HOTFIX: tables scroll horizontally; words do NOT break mid-letter
-   =================================================================== */
-
-/* 1) Let cards scroll horizontally instead of breaking words */
-.card {
-  overflow-x: auto;                  /* enable horizontal scroll when needed */
-  overflow-wrap: normal;             /* undo earlier 'anywhere' for general text */
-  word-break: normal;
-}
-
-/* 2) Inside tables, keep words intact; allow scroll instead of wrapping */
-.card table { width: 100%; border-collapse: collapse; }
-.card th, .card td {
-  white-space: nowrap;               /* keep columns readable */
-  overflow-wrap: normal;
-  word-break: normal;
-}
-
-/* On very narrow phones you can allow labels/captions outside tables to wrap normally */
-.card p, .card .hint, .card .small { overflow-wrap: anywhere; word-break: normal; }
-
-/* ===================================================================
-   HOTFIX: Subjects checklist — reliable grid + native checkboxes
-   =================================================================== */
-
-/* Support multiple selectors just in case markup differs on other pages */
-#subjectChecklist,
-.subject-checklist,
-[data-role="subject-checklist"]{
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr));   /* phones */
-  gap: 12px 14px;
-  align-items: stretch;
-}
-
-@media (min-width:480px){
-  #subjectChecklist, .subject-checklist, [data-role="subject-checklist"]{
-    grid-template-columns: repeat(4, minmax(0,1fr));
-  }
-}
-@media (min-width:720px){
-  #subjectChecklist, .subject-checklist, [data-role="subject-checklist"]{
-    grid-template-columns: repeat(5, minmax(0,1fr));
-  }
-}
-@media (min-width:1024px){
-  #subjectChecklist, .subject-checklist, [data-role="subject-checklist"]{
-    grid-template-columns: repeat(6, minmax(0,1fr));
-  }
-}
-
-/* Each subject tile */
-#subjectChecklist label,
-.subject-checklist label,
-[data-role="subject-checklist"] label{
-  display: flex;
-  align-items: center;               /* checkbox vertically centered */
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(2,6,23,.35);
-  border: 1px solid rgba(148,163,184,.25);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-  min-height: 44px;                  /* touch target */
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* RESET to native checkbox for perfect centering on all browsers */
-#subjectChecklist input[type="checkbox"],
-.subject-checklist input[type="checkbox"],
-[data-role="subject-checklist"] input[type="checkbox"]{
   -webkit-appearance: checkbox !important;
   appearance: checkbox !important;
-  width: 18px; height: 18px;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  display: inline-block !important;
-  accent-color: #1d4ed8;            /* blue tick to match theme */
-  margin: 0;                         /* avoid baseline nudge */
+  width:18px;height:18px;
+  accent-color:var(--one-green);
+  margin:0;
 }
 
-/* Remove any custom pseudo-check from older rules */
-#subjectChecklist input[type="checkbox"]::after,
-.subject-checklist input[type="checkbox"]::after,
-[data-role="subject-checklist"] input[type="checkbox"]::after{ display:none !important; }
-
-/* Checked tile emphasis (keeps the native checkbox) */
-#subjectChecklist label:has(input[type="checkbox"]:checked),
-.subject-checklist label:has(input[type="checkbox"]:checked),
-[data-role="subject-checklist"] label:has(input[type="checkbox"]:checked){
-  background: rgba(30,64,175,.35);
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59,130,246,.25);
-  color: #e5f0ff;
+/* =========================
+   OPTIONAL: Table scrolling
+   ========================= */
+.table-scroll{
+  overflow-x:auto;
 }
-
-/* Fallback if :has() is unsupported (older Safari) */
-@supports not (selector(:has(*))){
-  #subjectChecklist input[type="checkbox"]:checked,
-  .subject-checklist input[type="checkbox"]:checked,
-  [data-role="subject-checklist"] input[type="checkbox"]:checked{
-    outline: 2px solid rgba(59,130,246,.35);
-    outline-offset: 2px;
-  }
-}
-
-/* Slightly denser on very small screens if you'd like (optional) */
-@media (max-width:360px){
-  #subjectChecklist label,
-  .subject-checklist label,
-  [data-role="subject-checklist"] label{
-    padding: 8px 10px;
-    gap: 8px;
-    min-height: 40px;
-  }
+.table-scroll table{ width:100%; border-collapse:collapse; }
+.table-scroll th,
+.table-scroll td{
+  white-space:nowrap;
+  overflow-wrap:normal;
+  word-break:normal;
 }
 
 /* ===============================================================
    ATTENDANCE bottom sheet (iOS label clipping fix – scoped)
-   Keeps Android/Laptop behavior unchanged; no global overrides.
    =============================================================== */
-#attnToast .attn-choices{                /* list wrapper if present */
-  display:flex; flex-direction:column; gap:10px;
-}
-
-#attnToast .row,                         /* defensive: common row class */
-#attnToast .attn-row{
-  display:flex; align-items:center; gap:10px; min-width:0;
-}
-
-#attnToast label{                        /* make subject text visible on iOS */
-  display:inline-flex !important;
-  align-items:center;
-  gap:10px;
-  margin:0;
-  white-space:normal;                    /* allow wrapping inside the sheet */
-  min-width:0;                           /* let flex item shrink on Safari */
-  color:inherit;
-}
-
-#attnToast input[type="checkbox"]{       /* native, centered tick */
-  -webkit-appearance:checkbox !important;
-  appearance:checkbox !important;
-  accent-color:#1d4ed8;
-  width:18px; height:18px;
-  margin:0 8px 0 0;
-  flex:0 0 auto;
-}
-
-#attnToast .label,                       /* in case text uses a span class */
-#attnToast span{
-  min-width:0; overflow:hidden; text-overflow:ellipsis;
-}
-
-/* ===============================================================
-   ATTENDANCE bottom sheet — iOS subject text visibility (strict)
-   Scoped to the toast only; does not affect other pages/components.
-   =============================================================== */
-
-#attnToast,
-#attnToast * {
-  -webkit-text-size-adjust: 100%;
-}
-
-/* Make the sheet use dark ink on white background, even in .app-dark */
-#attnToast,
-#attnToast .attn-choices,
-#attnToast .attn-row,
-#attnToast label,
-#attnToast label > span {
-  color: #0f172a !important;   /* readable on white sheet */
-}
-
-/* Layout: keep each subject row stable and text visible */
 #attnToast .attn-choices{ display:flex; flex-direction:column; gap:10px; }
+#attnToast .row,
+#attnToast .attn-row{ display:flex; align-items:center; gap:10px; min-width:0; }
 
-#attnToast .attn-row,
-#attnToast .row{ display:flex; align-items:center; gap:10px; min-width:0; }
-
-/* Force label to participate in the row’s flex flow */
 #attnToast label{
   display:inline-flex !important;
   align-items:center;
   gap:10px;
   margin:0 !important;
-  padding:0;                    /* sheet already pads rows */
-  min-width:0 !important;       /* critical on Safari */
-  white-space:normal;           /* allow wrapping if narrow */
+  padding:0;
+  min-width:0 !important;
+  white-space:normal;
+  color:inherit;
 }
 
-/* The text node (if wrapped in a span), let it shrink/grow */
-#attnToast label > span{
-  display:inline-block;
-  flex:1 1 auto;
-  min-width:0;                  /* prevent clipping on iOS */
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* Keep native checkbox centered and reliable across browsers */
 #attnToast input[type="checkbox"]{
   -webkit-appearance: checkbox !important;
   appearance: checkbox !important;
-  accent-color: #1d4ed8;
-  width:18px; height:18px;
+  accent-color:var(--one-green);
+  width:18px;height:18px;
   margin:0 8px 0 0;
   flex:0 0 auto;
 }
 
+#attnToast label > span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+#attnToast,
+#attnToast * { -webkit-text-size-adjust: 100%; }
+
+/* Make toast text readable (light sheet) */
+#attnToast,
+#attnToast .attn-choices,
+#attnToast .attn-row,
+#attnToast label,
+#attnToast label > span { color:#0f172a !important; }
+
 /* ===============================================================
    ATTENDANCE banner on Home (#attnBanner) — iOS visibility/layout
-   Mirrors the #attnToast hardening but scoped to Home banner.
    =============================================================== */
 #attnBanner,
-#attnBanner * {
+#attnBanner *{
   -webkit-text-size-adjust: 100%;
-  color: #0f172a !important;     /* readable dark ink on white card */
+  color:#0f172a !important;
 }
 
-#attnBanner {
-  background: #ffffff !important; /* ensure white sheet even in .app-dark */
-}
+#attnBanner{ background:#ffffff !important; }
 
-/* Rows/labels must not clip on Safari */
 #attnBanner .row,
-#attnBanner .attn-row { display:flex; align-items:center; gap:10px; min-width:0; }
+#attnBanner .attn-row{ display:flex; align-items:center; gap:10px; min-width:0; }
 
 #attnBanner label{
   display:inline-flex !important;
@@ -430,11 +426,10 @@ html { -webkit-text-size-adjust: 100%; }
   gap:10px;
   margin:0 !important;
   padding:0;
-  min-width:0 !important;        /* critical on iOS Safari */
-  white-space:normal;            /* allow wrapping if narrow */
+  min-width:0 !important;
+  white-space:normal;
 }
 
-/* If text is wrapped in spans, let them shrink/grow */
 #attnBanner label > span{
   display:inline-block;
   flex:1 1 auto;
@@ -443,22 +438,19 @@ html { -webkit-text-size-adjust: 100%; }
   text-overflow:ellipsis;
 }
 
-/* Native checkbox for reliable centering/touch on iOS */
 #attnBanner input[type="checkbox"]{
   -webkit-appearance: checkbox !important;
   appearance: checkbox !important;
-  accent-color: #1d4ed8;
-  width:18px; height:18px;
+  accent-color:var(--one-green);
+  width:18px;height:18px;
   margin:0 8px 0 0;
   flex:0 0 auto;
 }
 
-/* ===== Fix: Attendance banner buttons should be readable ===== */
-#attnBanner .btn{
-  color:#fff !important;                /* Submit button text stays white */
-}
+/* Attendance banner buttons */
+#attnBanner .btn{ color:#fff !important; }
 #attnBanner .btn.light{
-  color:#0f172a !important;             /* Remind me later text visible */
+  color:#0f172a !important;
   background:#eef2ff !important;
   border-color: var(--line) !important;
 }

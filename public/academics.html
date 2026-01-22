@@ -4,89 +4,99 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Academics — OPAXI</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/styles.css?v=2025-09-16c">
 
   <style>
     .wrap{max-width:960px;margin:16px auto;padding:0 16px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px}
-    .badge{background:#eef2ff;color:#1e3a8a}
-    .hint{color:#64748b}
-    .legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
-    .chip{display:inline-block;font-size:12px;padding:4px 8px;border-radius:999px;background:#f1f5f9}
-    .chip.exam{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-    .chip.class{background:#e0f2fe;color:#075985;border:1px solid #bae6fd}
+
+    .hint{color:var(--muted,#94a3b8)}
+
+    /* Chips */
+    .legend{display:flex;gap:10px;align-items:center;margin-top:10px}
+    .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line,rgba(148,163,184,.35))}
+    .chip.exam{background:rgba(248,113,113,.14);color:#fecaca;border-color:rgba(248,113,113,.25)}
+    .chip.class{background:rgba(56,189,248,.14);color:#bae6fd;border-color:rgba(56,189,248,.25)}
+    .chip.sub{background:rgba(163,230,53,.16);color:#d9f99d;border-color:rgba(163,230,53,.26)}
+
+    /* ✅ Force legend in one line everywhere on this page */
+    .legend.one-line{
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      white-space:nowrap;
+    }
+    .legend.one-line::-webkit-scrollbar{ height:6px; }
+    .legend.one-line::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.14); border-radius:999px; }
+    .legend.one-line::-webkit-scrollbar-track{ background:rgba(255,255,255,.06); border-radius:999px; }
+
+    /* ONE-green button (used only for CTAs) */
+    .btn.one{
+      background:rgba(163,230,53,.92);
+      color:#0b1220;
+      border:1px solid rgba(163,230,53,.55);
+      box-shadow:0 10px 24px rgba(163,230,53,.10);
+      text-decoration:none; /* safety for <a> */
+    }
+    .btn.one:hover{filter:brightness(1.03)}
+    .btn.one:active{transform:translateY(1px)}
+
+    /* Date picker row */
     .datebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
     .datebar input[type="date"]{width:auto}
+
+    /* Profile modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:80}
+    .modal{width:min(720px,92vw);max-height:86vh;overflow:auto;background:var(--card,#0b1220);border:1px solid var(--line,rgba(148,163,184,.35));border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+    .modal .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line,rgba(148,163,184,.35))}
+    .modal .modal-body{padding:16px}
+    .modal .xbtn{background:transparent;border:0;font-size:18px;cursor:pointer;line-height:1;padding:6px 10px;border-radius:10px;color:inherit}
+    .modal .xbtn:hover{background:rgba(148,163,184,.18)}
   </style>
 </head>
+
 <body class="app-dark">
   <div id="header"></div>
 
   <div class="wrap">
     <!-- Top card -->
     <div class="card">
-      <h2>Academics</h2>
-      <p id="routineDesc" class="small" style="color:#64748b">Loading routine…</p>
-      <div class="row">
-        <a id="openRoutine" class="btn" href="#" target="_blank" rel="noopener" style="display:none">Open Routine</a>
-        <a id="openResources" class="btn light" href="/resources.html">Open Resources</a>
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <h2 style="margin-bottom:6px">Academics</h2>
+          <p id="routineDesc" class="small hint">Loading routine…</p>
+        </div>
+
+        <!-- ✅ My Profile back to normal (not green) -->
+        <button id="btnMyProfile" class="btn light" type="button">My Profile</button>
       </div>
 
-      <!-- Legend -->
-      <div class="legend">
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <!-- Compatibility: kept hidden -->
+        <a id="openRoutine" class="btn" href="#" target="_blank" rel="noopener"
+           style="display:none !important; pointer-events:none !important; opacity:0 !important;"
+           aria-hidden="true" tabindex="-1">Open Routine</a>
+
+        <!-- ✅ Green CTAs -->
+        <a id="openResources" class="btn one" href="/resources.html">Open Resources</a>
+        <a id="openPlan" class="btn one" href="/plan.html">Plan</a>
+      </div>
+
+      <!-- ✅ Legend one-line -->
+      <div class="legend one-line" aria-label="Legend">
         <span class="small hint">Legend:</span>
         <span class="chip class">Class</span>
-        <span class="chip exam">Exam/Assessment/Event</span>
+        <span class="chip exam">Exam</span>
+        <span class="chip sub">Submissions</span>
       </div>
     </div>
 
-    <!-- Profile -->
-    <div class="card" id="profileCard">
-        <div class="row" style="justify-content:space-between;align-items:center;">
-          <div class="row" style="align-items:center;gap:10px;margin-bottom:10px">
-              <span class="badge" id="profileRole">—</span>
-              <span class="small">Term: <strong id="profileTerm">—</strong></span>
-          </div>
-          <button id="toggleProfile" class="btn light">Expand</button>
-        </div>
-  
-        <div id="profileContent" style="display:none;">
-            <label>Section</label>
-            <select id="profileSection">
-              <option value="">Select…</option>
-            </select>
-  
-            <div id="subjectChecklist" style="margin-top:12px"></div>
-  
-            <div class="row" style="margin-top:12px">
-              <button id="btnSaveProfile" class="btn">Save settings</button>
-              <span id="profileMsg" class="msg"></span>
-            </div>
-  
-            <div id="profileHelp" class="sticky" style="margin-top:12px">Select and save your Section above to see your classes.</div>
-        </div>
-      </div>
-
-    <!-- Exams and Events block -->
+    <!-- Exams -->
     <section id="allExamsWrap"></section>
 
-    <!-- Date picker -->
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
-        <div class="small" style="color:#475569;font-weight:600">Pick a date</div>
-        <div class="datebar">
-          <input type="date" id="pickDate" />
-          <button class="iconbtn calendar" id="btnPickDate" aria-label="Open date picker" title="Pick a date">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10z"/>
-            </svg>
-          </button>
-          <button id="btnGoDate" class="btn light">Show</button>
-        </div>
-      </div>
-      <div id="selectedWrap" style="margin-top:8px"></div>
-    </div>
+    <!-- Pick a date: You said it should be moved to Plan, so this stays removed if you already removed it -->
+    <!-- <div class="card">...</div> -->
 
     <!-- Schedule -->
     <div id="scheduleWrap"></div>
@@ -97,12 +107,69 @@
     </div>
   </div>
 
+  <!-- Profile Modal -->
+  <div class="modal-backdrop" id="profileModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <div class="modal-head">
+        <div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
+          <strong id="profileModalTitle">My Profile</strong>
+          <span class="badge" id="profileRole">—</span>
+          <span class="small">Term: <strong id="profileTerm">—</strong></span>
+        </div>
+        <button class="xbtn" id="btnCloseProfile" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="profileContent" style="display:block;">
+          <label>Section</label>
+          <select id="profileSection">
+            <option value="">Select…</option>
+          </select>
+
+          <div id="subjectChecklist" style="margin-top:12px"></div>
+
+          <div class="row" style="margin-top:12px;align-items:center;gap:10px;flex-wrap:wrap">
+            <button id="btnSaveProfile" class="btn one" type="button">Save settings</button>
+            <span id="profileMsg" class="msg"></span>
+            <span id="changeRemain" class="small hint" style="margin-left:auto"></span>
+          </div>
+
+          <div id="profileHelp" class="sticky" style="margin-top:12px">
+            Select and save your Section above to see your classes.
+          </div>
+
+          <button id="toggleProfile" class="btn light" type="button" style="display:none">Expand</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { renderHeader } from "/shared/ui.js";
     import { attachAuthHandlers } from "/shared/auth.js";
     import { auth } from "/shared/firebase.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { AcademicsController } from "/modules/academics/AcademicsController.js";
+
+    const backdrop = document.getElementById("profileModalBackdrop");
+    const btnMyProfile = document.getElementById("btnMyProfile");
+    const btnClose = document.getElementById("btnCloseProfile");
+
+    const openProfile = () => {
+      if (!backdrop) return;
+      backdrop.style.display = "flex";
+      backdrop.setAttribute("aria-hidden", "false");
+    };
+    const closeProfile = () => {
+      if (!backdrop) return;
+      backdrop.style.display = "none";
+      backdrop.setAttribute("aria-hidden", "true");
+    };
+
+    btnMyProfile?.addEventListener("click", openProfile);
+    btnClose?.addEventListener("click", closeProfile);
+    backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeProfile(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProfile(); });
 
     onAuthStateChanged(auth, async (u) => {
       const email = u?.email || "";
@@ -118,10 +185,8 @@
       });
       attachAuthHandlers();
 
-      // Main controller
       (new AcademicsController()).init();
 
-      // Load attendance and both lock systems
       const bust = String(Date.now());
       const tasks = [
         import(`/modules/academics/components/AttendancePanel.js?v=${bust}`)
@@ -134,7 +199,6 @@
         import(`/modules/academics/SeniorProfileLock.js?v=${bust}`)
           .then((m) => m.wireSeniorProfileLock())
           .catch((e) => console.warn("SeniorProfileLock skipped:", e)),
-        // ✅ NEW: Junior lock flow (2-change limit)
         import(`/modules/academics/JuniorProfileLock.js?v=${bust}`)
           .then((m) => m.wireJuniorProfileLock())
           .catch((e) => console.warn("JuniorProfileLock skipped:", e))
@@ -145,16 +209,23 @@
 
     const toggleButton = document.getElementById('toggleProfile');
     const profileContent = document.getElementById('profileContent');
-
-    toggleButton.addEventListener('click', () => {
-    if (profileContent.style.display === 'none') {
+    toggleButton?.addEventListener('click', () => {
+      if (!profileContent) return;
+      if (profileContent.style.display === 'none') {
         profileContent.style.display = 'block';
         toggleButton.textContent = 'Collapse';
-    } else {
+      } else {
         profileContent.style.display = 'none';
         toggleButton.textContent = 'Expand';
-    }
+      }
     });
+
+    const openRoutine = document.getElementById("openRoutine");
+    if (openRoutine) {
+      openRoutine.style.display = "none";
+      openRoutine.setAttribute("aria-hidden", "true");
+      openRoutine.tabIndex = -1;
+    }
   </script>
 </body>
 </html>
